@@ -1,5 +1,11 @@
 #include "find_quantities.h"
 
+Find_Quantities::Find_Quantities()   // For when we want to set the hs manually
+{
+
+}
+
+
 Find_Quantities::Find_Quantities(char field_type, int maxit, int systemsize, double tolerance, double J, double h, bool armadillobool, bool sectorbool, bool inftempbool)
 {
     this->field_type = field_type;
@@ -18,7 +24,7 @@ Find_Quantities::Find_Quantities(char field_type, int maxit, int systemsize, dou
     else if(field_type=='A')    make_hs_alternating();
     else
     {
-        make_hs_random();       // Cause I assumed I would need this the most, at least after the testing phase.
+        make_hs_homogenous();       // Change this to _random after the testing phase, because anything else would be a bummer.
         field_type_fail = true;
     }
 
@@ -190,6 +196,39 @@ void Find_Quantities::calculateZ_arma()
     else{
         Z = 0;
         for(int i=0; i<N; i++)            Z += exp(beta*(min_ev-eigvals_a[i]));}  // Is it wiser to point in introduce a temporary vealue for Z?
+}
+
+
+//-----------------------------------------------H'S------------------------------------------------------//
+
+
+
+void Find_Quantities::make_hs_random()
+{
+    /*
+    std::default_random_engine generator;        // I asked the internet, and it replied
+    std::uniform_real_distribution<double> distribution(-h,h);
+    for(int i=0; i<no_of_states; i++)
+    {
+        hs[i] = distribution(generator);   // This should do it
+    } // End for-loop
+    */
+}
+
+void Find_Quantities::make_hs_homogenous()
+{
+    for(int i=0; i<no_of_states; i++)        hs[i] = h;
+}
+
+void Find_Quantities::make_hs_alternating()
+{
+    for(int i=0; i<no_of_states; i++)        hs[i] = h*pow(-1,i);
+}
+
+
+void Find_Quantities::set_hs_manually(vector<double> hs_in)
+{   // This function may be useful for testing. NB: Must make sure len(hs_in) = no_of_states.
+    for(unsigned int i=0; i<no_of_states; i++)        hs[i] = hs_in[i];
 }
 
 

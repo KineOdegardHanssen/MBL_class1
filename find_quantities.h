@@ -36,14 +36,13 @@ public:
 
 
     // Initializer
+    Find_Quantities();
     Find_Quantities(char field_type, int maxit, int systemsize, double tolerance, double J, double h, bool armadillobool, bool sectorbool, bool inftempbool);
     void initialize_sector(); // Are these two only needed for ETH? In that case, I guess they shouldn't be called from the constructor.
     void initialize_all();
     void make_hs_random();
     void make_hs_homogenous();
     void make_hs_alternating();
-
-
 
 
     //Functions
