@@ -8,6 +8,7 @@
 #include<vector>
 #include<complex>
 
+using namespace std;
 
 class Find_Quantities
 {
@@ -24,13 +25,13 @@ public:
     double J, h, Z, beta, min_ev, tolerance; // Only change smallest_ev this for every new instance of quantities...
     bool armadillobool, sectorbool, inftempbool, field_type_fail;
 
-    std::vector<double> hs;
+    vector<double> hs;
 
     Eigen::VectorXd eigenvalues_all_Eigen;
     Eigen::VectorXd eigvals;
     Eigen::MatrixXd eigmat;
 
-    arma::vec eigenvalues_all_arma;
+    arma::vec eigenvalues_all_arma;  // 'Cause arma is cranky today...
     arma::vec eigvals_a;  // This will probably be a problem...
     arma::mat eigmat_a;   // Could rename it at each step. Troublesome...
 
@@ -43,6 +44,7 @@ public:
     void make_hs_random();
     void make_hs_homogenous();
     void make_hs_alternating();
+    void set_hs_manually(vector<double> hs_in);
 
 
     //Functions
@@ -50,8 +52,9 @@ public:
     // Basic functions
     void sort_energies();
     int middle_sector();
-    arma::mat initialize_matrix_arma(int size);
-    Eigen::MatrixXd initialize_matrix_Eigen(int size);
+    int factorial(int i);
+    arma::mat initialize_matrix_arma(int size);        // armadillo has a function that does this.
+    Eigen::MatrixXd initialize_matrix_Eigen(int size); // maybe the same goes for Eigen?
     int signcompare(double fa, double fc);
     void calculateZ();
     void calculateZ_arma();

@@ -41,7 +41,7 @@ public:
 
     //Initializers
     Diagonalize();
-    Diagonalize(Systems given);
+    Diagonalize(Set_Hamiltonian given);
 
 
 

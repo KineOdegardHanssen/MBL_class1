@@ -28,18 +28,20 @@ Find_Quantities::Find_Quantities(char field_type, int maxit, int systemsize, dou
         field_type_fail = true;
     }
 
-    if(sectorbool && (inftempbool==false))    initialize_sector();
-    else                                      initialize_all();
+    if(sectorbool)              initialize_sector();
+    else                        initialize_all();
 }
 
-void Find_Quantities::intialize_all()
+void Find_Quantities::initialize_all()
 {
     system = Set_Hamiltonian(systemsize, J, hs, armadillobool, sectorbool);  // Do Set_Hamiltonian really need to take sectorbool in?
+    /*// This can't be right...
     if(inftempbool)
     {
         int middlesector = middle_sector();
         system.set_mysector(middlesector);
     }
+    */
     system.palhuse_interacting_totalHamiltonian();
     system.palhuse_diagonal_totalHamiltonian();
     eig_all = Diagonalize(system);
@@ -65,7 +67,7 @@ void Find_Quantities::intialize_all()
 }
 
 
-void Find_Quantities::intialize_sector()
+void Find_Quantities::initialize_sector()
 {   // Problem: The eigenvalues are now unsorted. --- But they are sorted in the sector we are considering
 
     // Finding the middle sector. We want its eigenvectors
@@ -74,11 +76,12 @@ void Find_Quantities::intialize_sector()
 
     system = Set_Hamiltonian(systemsize, J, hs, armadillobool, sectorbool);  // Do Set_Hamiltonian really need to take sectorbool in?
     double a;
+    //double no_of_states = system.no_of_states;
     int k=0; // To assign eigenvalues to vector elements
     min_ev = 1000;
     if(armadillobool)   // So this is a bit complicated...
     {
-        eigenvalues_all_arma(system.no_of_states); // Have this one for the whole Hamiltonian also? Then I only need one function of Z and for finding beta.
+        eigenvalues_all_arma = arma::vec(system.no_of_states); // Have this one for the whole Hamiltonian also? Then I only need one function of Z and for finding beta.
         // Yes, that does seem like a good idea.
         for(int i=0; i<systemsize; i++)
         {   // We have the same number of  sectors as we have systemsizes
@@ -95,7 +98,7 @@ void Find_Quantities::intialize_sector()
             }
             for(int j=0; j<diagon.N; j++)
             {
-                a = diagon.eigenvalues_armadillo;
+                a = diagon.eigenvalues_armadillo(j);
                 eigenvalues_all_arma(k) = a;
                 if(a<min_ev)    min_ev = a;
                 k++;
@@ -120,7 +123,7 @@ void Find_Quantities::intialize_sector()
             }
             for(int j=0; j<diagon.N; j++)
             {
-                a = diagon.eigenvalues_H;
+                a = diagon.eigenvalues_H(j);
                 eigenvalues_all_Eigen(k) = a;
                 if(a<min_ev)    min_ev = a;
                 k++;
@@ -153,6 +156,22 @@ int Find_Quantities::middle_sector()
     if(systemsize%2==0)        middlesector = systemsize/2;
     else                       middlesector = (systemsize+1)/2;
     return middlesector;
+}
+
+int Find_Quantities::factorial(int i)
+{
+    double j=1;
+    if(i<0)
+    {
+        cout << "Error! factorial(int i) must take input i>0! Will return 0" << endl;
+        j = 0;
+    }
+    else if(i>1)
+    {
+      for(int k=2; k<=i; k++)    j *= k;
+    }
+
+    return    j;
 }
 
 arma::mat Find_Quantities::initialize_matrix_arma(int size)
@@ -199,7 +218,7 @@ void Find_Quantities::calculateZ_arma()
 }
 
 
-//-----------------------------------------------H'S------------------------------------------------------//
+//-----------------------------------------------h'S------------------------------------------------------//
 
 
 
@@ -217,18 +236,18 @@ void Find_Quantities::make_hs_random()
 
 void Find_Quantities::make_hs_homogenous()
 {
-    for(int i=0; i<no_of_states; i++)        hs[i] = h;
+    for(int i=0; i<system.no_of_states; i++)        hs[i] = h;
 }
 
 void Find_Quantities::make_hs_alternating()
 {
-    for(int i=0; i<no_of_states; i++)        hs[i] = h*pow(-1,i);
+    for(int i=0; i<system.no_of_states; i++)        hs[i] = h*pow(-1,i);
 }
 
 
 void Find_Quantities::set_hs_manually(vector<double> hs_in)
-{   // This function may be useful for testing. NB: Must make sure len(hs_in) = no_of_states.
-    for(unsigned int i=0; i<no_of_states; i++)        hs[i] = hs_in[i];
+{   // This function may be useful for testing. NB: Must make sure len(hs_in) = system.no_of_states.
+    for(unsigned int i=0; i<system.no_of_states; i++)        hs[i] = hs_in[i];
 }
 
 
@@ -423,8 +442,8 @@ double Find_Quantities::ETH(int i)
 double Find_Quantities::ETH_arma(int i)         // Or should I return a list of doubles, so I have more flexibility regarding which quantity to use
 {
     int j = 0;
-    //newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
-    //cout << "newtonsmethod_arma run" << endl;
+    if(inftempbool==true)    beta = 0;
+    else    newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
     beta = 0; // Incorrect, but want to focus on removing any errors for now.
     arma::mat thm = thermalmat_arma();
     arma::mat esm = eigenstatemat_arma(i);
@@ -457,8 +476,8 @@ double Find_Quantities::ETH_arma(int i)         // Or should I return a list of 
 
 double Find_Quantities::ETH_arma_sector(int i)
 {
-    //newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
-    //cout << "newtonsmethod_arma run" << endl;
+    if(inftempbool==true)    beta = 0;
+    else    newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
     beta = 0; // Incorrect, but want to focus on removing any errors for now.
     arma::mat thm = thermalmat_arma();
     arma::mat esm = eigenstatemat_arma(i);
@@ -482,8 +501,8 @@ double Find_Quantities::ETH_arma_sector(int i)
 double Find_Quantities::ETH_arma_maziero(int i)         // Or should I return a list of doubles, so I have more flexibility regarding which quantity to use
 {
     int j = 0;
-    //newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
-    //cout << "newtonsmethod_arma run" << endl;
+    if(inftempbool==true)    beta = 0;
+    else    newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
     beta = 0; // Incorrect, but want to focus on removing any errors for now.
     arma::mat thm = thermalmat_arma();
     arma::mat esm = eigenstatemat_arma(i);
@@ -534,8 +553,8 @@ double Find_Quantities::ETH_Eigen(int i)
 
 double Find_Quantities::ETH_Eigen_sector(int i)
 {
-    //newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
-    //cout << "newtonsmethod_arma run" << endl;
+    if(inftempbool==true)    beta = 0;
+    else    newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
     beta = 0; // Incorrect, but want to focus on removing any errors for now.
     Eigen::MatrixXd thm = thermalmat_Eigen();  // Wait... do these work for sparse? ... Probably. N=numberofstatesor numberofhits, depending on sectorbool.
     Eigen::MatrixXd esm = eigenstatemat_Eigen(i);
@@ -705,7 +724,10 @@ arma::mat Find_Quantities::trace_arma_maziero(arma::mat A)
 arma::mat Find_Quantities::trace_arma_sector(arma::mat A)
 {   // Verify somehow that this is correct.
     arma::mat trace_matrix = initialize_matrix_arma(2);  // initialize_matrix_arma(int size)
-    int first_limit = floor(N/2);
+
+    int sztot_2 = 2*system.mysector - systemsize;  // This is the total spin (in the z direction) divided by two.
+    int first_limit = factorial(systemsize-1)/(factorial((systemsize+sztot_2 )/2 -1)*factorial((systemsize- sztot_2)/2) );
+    //int first_limit = floor(N/2) + 1; // Just temporary, until I get the thing above fixed.
     for(int i=0; i<first_limit; i++)            trace_matrix(0,0) += A(i,i);
     for(int i=(first_limit+1); i<N; i++)        trace_matrix(1,1) += A(i,i);
     return trace_matrix;

@@ -1,5 +1,6 @@
 #include "diagonalize.h"
 #include<lapacke.h>
+#include <vector>
 //#include <stdlib.h>
 //#include <stdio.h>
 
@@ -7,17 +8,18 @@ Diagonalize::Diagonalize()
 {
 }
 
-Diagonalize::Diagonalize(Systems given)
+Diagonalize::Diagonalize(Set_Hamiltonian given)
 {
     this->given = given;
 }
 
 void Diagonalize::lapack_directly()
 {
-    const bool TRACE = false;
+    const bool TRACE = true;
 
     //Tests if I want to use them
     //cout << "compute the LU factorization..." << endl << endl;
+
 
     /*
     cout << "What we send in to LAPACK_dysyev" << endl;
@@ -63,6 +65,12 @@ void Diagonalize::lapack_directly()
     //if(TRACE)    cout << "Before declaration double *A1" << endl;
     double *A = given.eigenH.data(); // Must I rewrite this?
     //if(TRACE)    cout << "After declaration double *A1" << endl;
+
+    if(TRACE)
+    {
+        cout << "Our sector Hamiltonian:" << endl;
+        cout << given.eigenH << endl;
+    }
 
     // end of declarations
 
@@ -159,14 +167,17 @@ void Diagonalize::lapack_directly()
     //cout << "After putting data manually into an Eigen matrix: " << endl;
     //cout << eigenmatrix_H << endl;
 
-    /*
-    cout << "Manually: " << endl;
-    cout << "Eigenmatrix: " << endl;
-    cout << eigenmatrix_H << endl;
+    /*  */
+    if(TRACE)
+    {
+        cout << "Eigenmatrix: " << endl;
+        cout << eigenmatrix_H << endl;
 
-    cout << "Eigenvalues" << endl;
-    cout << eigenvalues_H << endl;
-    */
+        cout << "Eigenvalues" << endl;
+        cout << eigenvalues_H << endl;
+    }
+
+
 
 
 
@@ -207,19 +218,22 @@ void Diagonalize::using_armadillo()
 
 void Diagonalize::print_using_armadillo()
 {
+
+    cout << "Matrix in: " << endl;
+    cout << given.armaH << endl;
+    /*
     for(int i= 0; i<N; i++)
     {
-        cout << "Eigenvalue = " << eigenvalues_armadillo(i) << endl;
-        cout << "Its corresponding eigenvector:" << endl;
         for(int j=0; j<N; j++)       cout << eigenvectors_armadillo(j,i) << " ";
         cout << endl;
     }   // End for-loop over i
+    */
 
     cout << "Eigenvalues = " << eigenvalues_armadillo << endl;
     cout << "Eigenvectors : " << endl << eigenvectors_armadillo << endl;
 }
 
-
+// This is pretty much useless...
 void Diagonalize::using_dense_eigen()
 {
     N = given.matrixsize;

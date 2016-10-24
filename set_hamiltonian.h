@@ -6,17 +6,21 @@
 #include <armadillo>
 #include <Eigen/Dense>
 
+using namespace std;
+
 class Set_Hamiltonian
 {
 public:
 
     int systemsize, no_of_states, no_of_hits, matrixsize, mysector;
     double J;
-    bool armadillobool, sectorbool, sectorboolchanged, palhuse;
+    bool armadillobool, sectorbool, sectorboolchanged, palhuse, testupip1downi, testdownip1upi;
 
     std::vector<int> sectorlist;
     std::vector<double> hs;
 
+    Eigen::MatrixXd eigenH;
+    arma::mat       armaH;
 
     //Initializers
     Set_Hamiltonian();
@@ -54,7 +58,7 @@ public:
     //The systems
     // Well, I don't need these, do I?
     void randomize();
-    void set_hs(vector<double> hs_in); // Maybe just this one. Or have it in the initializer/ constructor.
+    void set_hs(std::vector<double> hs_in); // Maybe just this one. Or have it in the initializer/ constructor.
     void set_hs_hom();
     void set_hs_alt();
 
@@ -63,12 +67,14 @@ public:
     void set_elements(int i, int b);           // unspecified.
     void palhuse_set_elements(int i, int b);
     // Sector Hamiltonians
-    void palhuse_interacting_sectorHamiltonian_dense();   // Merge these?
+    void palhuse_interacting_sectorHamiltonian();
     void palhuse_diagonal_sectorHamiltonian();
 
     // Total Hamiltonian
     void palhuse_interacting_totalHamiltonian();
     void palhuse_diagonal_totalHamiltonian();
+
+    void flip_diagonal_sectorHamiltonian();
 };
 
 #endif // SET_HAMILTONIAN_H

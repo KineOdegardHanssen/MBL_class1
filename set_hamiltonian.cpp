@@ -23,6 +23,7 @@ Set_Hamiltonian::Set_Hamiltonian(int systemsize, double J, vector<double> hs, bo
     this->armadillobool = armadillobool;
     this->sectorbool = sectorbool;
     palhuse = true;                               // Default setting
+    // Should do things more automatically, probably... Or?
 }
 
 void Set_Hamiltonian::create_armadillo_matrix()
@@ -173,6 +174,7 @@ void Set_Hamiltonian::checktestupdown(int j,int i)
     }
 }
 
+/*
 void Set_Hamiltonian::set_mysector(int mysector)
 {
     if(sectorbool==false)  // Just in case I am that stupid.
@@ -184,12 +186,26 @@ void Set_Hamiltonian::set_mysector(int mysector)
     this->mysector = mysector;
     find_sector_dense();
 }
+*/
 
-void Set_Hamiltonian::find_sector()
+void Set_Hamiltonian::set_mysector(int mysector)
 {   // Should keep some information on what states are in the list. Well, that is all in sectorlist.
     // And that is not destroyed. Retrieve it in main, perhaps.
+
+    // Initializing
     no_of_hits = 0;
     sectorlist = vector<int>(no_of_states);
+    this->mysector = mysector;
+
+    // A warning will probably be nice...
+    if(sectorbool==false)  // Just in case I am that stupid.
+    {
+        sectorbool = true;
+        sectorboolchanged = true;
+        cout << "NB! Sectorbool changed to true!" << endl;
+    }
+
+    // Actually finding the sector
     for(int state=0; state<no_of_states; state++)
     {
         if(number_of_up(state)==mysector)
@@ -304,9 +320,11 @@ void Set_Hamiltonian::palhuse_diagonal_sectorHamiltonian()
     // Do something like index = no_of_states - i that works for this one.
     // For now, the matrix is upside down, but we have gotten a list of its entries: sectorlist.
     double element = 0;
+    double index;
     for(int i=0; i<no_of_hits; i++)
     {
         element = 0;
+        index = no_of_hits-1-i;  // To order the matrix from highest to lowest number in the binary representation
         int a = sectorlist[i];
         for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, a) + J*szip1szi(j,a);
         if(armadillobool == true)                            armaH(i,i) = element;
@@ -362,3 +380,10 @@ void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
     } // End for-loop over i
     if(armadillobool==false)                                                  eigenH.cast<double>(); // Is this really neccessary?
 } // End function palhuse_random_sectorHamiltonian_dense
+
+
+void Set_Hamiltonian::flip_diagonal_sectorHamiltonian()
+{
+    // See if I have to do something to flip the Hamiltonian. Could probably do this without calling its own function.
+
+}
