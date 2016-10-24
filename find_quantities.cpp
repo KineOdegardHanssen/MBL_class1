@@ -46,10 +46,14 @@ void Find_Quantities::initialize_all()
     system.palhuse_diagonal_totalHamiltonian();
     eig_all = Diagonalize(system);
     N = eig_all.N;
+    n_all = N;
     if(armadillobool)   // So this is a bit complicated...
     {
-        eigvals_a = eig_all.eigenvalues_armadillo;
+        diagon.using_armadillo();
+        eigvals_a = eig_all.eigenvalues_armadillo;              // Decide between an implementation of this
         eigmat_a = eig_all.eigenvectors_armadillo;
+        eigenvalues_all_arma  = eig_all.eigenvalues_armadillo;  // Or this
+        eigenvectors_all_arma = eig_all.eigenvectors_armadillo; // Or both. Maybe both is wise.
         min_ev = eigvals_a(0);            // The vector is sorted so that the first eigenvalue is the smallest. But the same goes for eigenvalues_H, I guess?
         /*
         cout << "Eigenvectors and eigenvalues in: " << endl;
@@ -59,8 +63,11 @@ void Find_Quantities::initialize_all()
     }
     else
     {
+        diagon.lapack_directly();
         eigvals = eig_all.eigenvalues_H;
-        eigmat = eig_all.eigenmatrix_H;
+        eigmat  = eig_all.eigenmatrix_H;
+        eigenvalues_all_Eigen  = eig_all.eigenvalues_H;
+        eigenvectors_all_Eigen = eig_all.eigenmatrix_H;
         min_ev = eigvals.minCoeff();
     }
     sort_energies();  // What about this when I have inftempbool?
@@ -71,17 +78,19 @@ void Find_Quantities::initialize_sector()
 {   // Problem: The eigenvalues are now unsorted. --- But they are sorted in the sector we are considering
 
     // Finding the middle sector. We want its eigenvectors
-    int middlesector;
     middlesector = middle_sector();
 
     system = Set_Hamiltonian(systemsize, J, hs, armadillobool, sectorbool);  // Do Set_Hamiltonian really need to take sectorbool in?
     double a;
+    n_all = system.no_of_states;
     //double no_of_states = system.no_of_states;
     int k=0; // To assign eigenvalues to vector elements
     min_ev = 1000;
     if(armadillobool)   // So this is a bit complicated...
     {
         eigenvalues_all_arma = arma::vec(system.no_of_states); // Have this one for the whole Hamiltonian also? Then I only need one function of Z and for finding beta.
+        eigenvectors_all_arma = arma::mat(system.no_of_states, system.no_of_states);
+        eigenvectors_all_arma.fill(0.0);
         // Yes, that does seem like a good idea.
         for(int i=0; i<systemsize; i++)
         {   // We have the same number of  sectors as we have systemsizes
@@ -101,6 +110,13 @@ void Find_Quantities::initialize_sector()
                 a = diagon.eigenvalues_armadillo(j);
                 eigenvalues_all_arma(k) = a;
                 if(a<min_ev)    min_ev = a;
+                // Must check the indexation here... or doesn't it matter? All elements are run over eventually anyway.
+                // Wait... Must fix the order somehow, so that the eigenvalues and eigenvectors correspond to the same index...
+                // Maybe check things in main just to be sure...
+                for(int l=0; l<diagon.N; l++)
+                {
+                    for(int m=0; m<diagon.N; m++)                    eigenvectors_all_arma(k, system.sectorlist[l]) = diagon.eigenvectors_armadillo(m,l);
+                } // Three loops... that is not good...
                 k++;
             }
         }
@@ -108,6 +124,7 @@ void Find_Quantities::initialize_sector()
     else
     {
         eigenvalues_all_Eigen(system.no_of_states); // Have this one for the whole Hamiltonian also? Then I only need one function of Z and for finding beta.
+        eigenvectors_all_Eigen = initialize_matrix_Eigen(system.no_of_states);
         // Yes, that does seem like a good idea.
         for(int i=0; i<systemsize; i++)
         {
@@ -115,7 +132,7 @@ void Find_Quantities::initialize_sector()
             system.palhuse_interacting_sectorHamiltonian();
             system.palhuse_diagonal_sectorHamiltonian();
             Diagonalize diagon = Diagonalize(system);
-            diagon.using_armadillo();  // Double check name
+            diagon.lapack_directly();  // Double check name
             if(middlesector==i)
             {
                 eigvals = diagon.eigenvalues_H;
@@ -126,6 +143,10 @@ void Find_Quantities::initialize_sector()
                 a = diagon.eigenvalues_H(j);
                 eigenvalues_all_Eigen(k) = a;
                 if(a<min_ev)    min_ev = a;
+                for(int l=0; l<diagon.N; l++)
+                {
+                    for(int m=0; m<diagon.N; m++)                    eigenvectors_all_Eigen(k, system.sectorlist[l]) = diagon.eigenmatrix_H(m,l);
+                } // Three loops... that is not good...
                 k++;
             }
             /*
@@ -152,10 +173,10 @@ void Find_Quantities::sort_energies()
 
 int Find_Quantities::middle_sector()
 {
-    int middlesector;
-    if(systemsize%2==0)        middlesector = systemsize/2;
-    else                       middlesector = (systemsize+1)/2;
-    return middlesector;
+    int themiddlesector;
+    if(systemsize%2==0)        themiddlesector = systemsize/2;
+    else                       themiddlesector = (systemsize+1)/2;
+    return themiddlesector;
 }
 
 int Find_Quantities::factorial(int i)
@@ -206,7 +227,7 @@ void Find_Quantities::calculateZ()
     if(inftempbool)    Z = system.no_of_states;
     else{
         Z = 0;
-        for(int i=0; i<N; i++)            Z += exp(beta*(min_ev-eigvals[i])); }   // Is it wiser to point in introduce a temporary vealue for Z?
+        for(int i=0; i<n_all; i++)            Z += exp(beta*(min_ev-eigenvalues_all_Eigen[i])); }   // Is it wiser to point in introduce a temporary vealue for Z?
 }
 
 void Find_Quantities::calculateZ_arma()
@@ -214,7 +235,7 @@ void Find_Quantities::calculateZ_arma()
     if(inftempbool)    Z = system.no_of_states;
     else{
         Z = 0;
-        for(int i=0; i<N; i++)            Z += exp(beta*(min_ev-eigvals_a[i]));}  // Is it wiser to point in introduce a temporary vealue for Z?
+        for(int i=0; i<n_all; i++)            Z += exp(beta*(min_ev-eigenvalues_all_arma[i]));}  // Is it wiser to point in introduce a temporary vealue for Z?
 }
 
 
@@ -315,10 +336,10 @@ double Find_Quantities::self_consistency_beta(double eigenvalue, double betatest
 { // Ooops, loops?
     double Z_test = 0;               // Partition function
     double en_sum_test = 0;          // Weighted sum over energies.
-    for(int i=0; i<N; i++)
+    for(int i=0; i<n_all; i++)
     {
-        Z_test += exp(betatest*(min_ev-eigvals(i)));                  // Or, Z_test/exp(min_ev), really. Will cancel it out of the eq.
-        en_sum_test += eigvals(i)*exp(betatest*(min_ev-eigvals(i)));  // set exp(beta(min_em-eigvals[i])) instead of exp(-beta(eigvals[i]-min_em)) to save a really small amount of time... This is to be run a lot
+        Z_test += exp(betatest*(min_ev-eigenvalues_all_Eigen(i)));                  // Or, Z_test/exp(min_ev), really. Will cancel it out of the eq.
+        en_sum_test += eigenvalues_all_Eigen(i)*exp(betatest*(min_ev-eigenvalues_all_Eigen(i)));  // set exp(beta(min_em-eigvals[i])) instead of exp(-beta(eigvals[i]-min_em)) to save a really small amount of time... This is to be run a lot
     }
     return en_sum_test - Z_test*eigenvalue;
 }
@@ -327,10 +348,10 @@ double Find_Quantities::self_consistency_beta_derivative(double eigenvalue, doub
 { // Ooops, loops?
     double Z_der_test = 0;               // Partition function
     double en_sum_der_test = 0;          // Weighted sum over energies.
-    for(int i=0; i<N; i++)
+    for(int i=0; i<n_all; i++)
     {
-        Z_der_test -= eigvals(i)*exp(betatest*(min_ev-eigvals(i)));                  // Do I really need to take -= ? Yes, I think so.
-        en_sum_der_test -= eigvals(i)*eigvals(i)*exp(betatest*(min_ev-eigvals(i)));
+        Z_der_test -= eigenvalues_all_Eigen(i)*exp(betatest*(min_ev-eigenvalues_all_Eigen(i)));                  // Do I really need to take -= ? Yes, I think so.
+        en_sum_der_test -= eigenvalues_all_Eigen(i)*eigenvalues_all_Eigen(i)*exp(betatest*(min_ev-eigenvalues_all_Eigen(i)));
     }
     return en_sum_der_test - Z_der_test*eigenvalue;
 }
@@ -401,10 +422,10 @@ double Find_Quantities::self_consistency_beta_a(double eigenvalue, double betate
 { // Ooops, loops?
     double Z_test = 0;               // Partition function
     double en_sum_test = 0;          // Weighted sum over energies.
-    for(int i=0; i<N; i++)
+    for(int i=0; i<n_all; i++)
     {
-        Z_test += exp(betatest*(min_ev-eigvals_a(i)));                  // Or, Z_test/exp(min_ev), really. Will cancel it out of the eq.
-        en_sum_test += eigvals_a(i)*exp(betatest*(min_ev-eigvals_a(i)));  // set exp(beta(min_em-eigvals[i])) instead of exp(-beta(eigvals[i]-min_em)) to save a really small amount of time... This is to be run a lot.
+        Z_test += exp(betatest*(min_ev-eigenvalues_all_arma(i)));                    // Or, Z_test/exp(min_ev), really. Will cancel it out of the eq.
+        en_sum_test += eigenvalues_all_arma(i)*exp(betatest*(min_ev-eigenvalues_all_arma(i)));  // set exp(beta(min_em-eigvals[i])) instead of exp(-beta(eigvals[i]-min_em)) to save a really small amount of time... This is to be run a lot.
     }
     return en_sum_test - Z_test*eigenvalue;
 }
@@ -413,10 +434,10 @@ double Find_Quantities::self_consistency_beta_derivative_a(double eigenvalue, do
 { // Ooops, loops?
     double Z_der_test = 0;               // Partition function
     double en_sum_der_test = 0;          // Weighted sum over energies.
-    for(int i=0; i<N; i++)
+    for(int i=0; i<n_all; i++)
     {
-        Z_der_test -= eigvals_a(i)*exp(betatest*(min_ev-eigvals_a(i)));                  // Do I really need to take -= ? Yes, I think so.
-        en_sum_der_test -= eigvals_a(i)*eigvals_a(i)*exp(betatest*(min_ev-eigvals_a(i)));
+        Z_der_test -= eigenvalues_all_arma(i)*exp(betatest*(min_ev-eigenvalues_all_arma(i)));                  // Do I really need to take -= ? Yes, I think so.
+        en_sum_der_test -= eigenvalues_all_arma(i)*eigenvalues_all_arma(i)*exp(betatest*(min_ev-eigenvalues_all_arma(i)));
     }
     return en_sum_der_test - Z_der_test*eigenvalue;
 }
@@ -443,8 +464,7 @@ double Find_Quantities::ETH_arma(int i)         // Or should I return a list of 
 {
     int j = 0;
     if(inftempbool==true)    beta = 0;
-    else    newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
-    beta = 0; // Incorrect, but want to focus on removing any errors for now.
+    else                     newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
     arma::mat thm = thermalmat_arma();
     arma::mat esm = eigenstatemat_arma(i);
     cout << "The density matrix is:" << endl;
@@ -452,11 +472,13 @@ double Find_Quantities::ETH_arma(int i)         // Or should I return a list of 
     cout << "The thermal matrix is: " << endl;
     cout << thm << endl << endl;
 
+    int size = n_all;
     // Trace procedures: Should we trace over all spins except our state?
     while(j<(systemsize-1)) // Want to trace over all particles except one
     {
-        thm = trace_arma(thm);  // Should I declare it again, or just let it stand like this?
-        esm = trace_arma(esm);
+        thm = trace_arma(thm, size);  // Should I declare it again, or just let it stand like this?
+        esm = trace_arma(esm, size);
+        size = size >> 1;
         j++;
     }
     cout << "Reduced thermal matrix: " << endl;
@@ -477,8 +499,7 @@ double Find_Quantities::ETH_arma(int i)         // Or should I return a list of 
 double Find_Quantities::ETH_arma_sector(int i)
 {
     if(inftempbool==true)    beta = 0;
-    else    newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
-    beta = 0; // Incorrect, but want to focus on removing any errors for now.
+    else                     newtonsmethod_arma(eigvals_a(i));   // Or should I call the bisection method? // newtonsmethod works, but is incredibly slow...
     arma::mat thm = thermalmat_arma();
     arma::mat esm = eigenstatemat_arma(i);
 
@@ -487,7 +508,14 @@ double Find_Quantities::ETH_arma_sector(int i)
     cout << "The thermal matrix is: " << endl;
     cout << thm << endl << endl;
 
-    thm = trace_arma_sector(thm);
+    int size = n_all;
+    // Trace procedures: Should we trace over all spins except our state?
+    while(j<(systemsize-1)) // Want to trace over all particles except one
+    {
+        thm = trace_arma(thm, size);  // Should I declare it again, or just let it stand like this?
+        size = size >> 1;
+        j++;
+    }
     esm = trace_arma_sector(esm);
 
     cout << "Reduced thermal matrix: " << endl;
@@ -510,10 +538,12 @@ double Find_Quantities::ETH_arma_maziero(int i)         // Or should I return a 
     cout << esm << endl << endl;
     cout << "The thermal matrix is: " << endl;
     cout << thm << endl << endl;
+    int size = n_all;
     while(j<(systemsize-1)) // Want to trace over all particles except one
     {
-        thm = trace_arma_maziero(thm);  // Should I declare it again, or just let it stand like this?
-        esm = trace_arma_maziero(esm);
+        thm = trace_arma_maziero(thm, size);  // Should I declare it again, or just let it stand like this?
+        esm = trace_arma_maziero(esm, size);  // What to do with esm here? Put it outside? Or not?
+        size >> 1;
         j++;
     }
     cout << "Reduced thermal matrix: " << endl;
@@ -538,10 +568,12 @@ double Find_Quantities::ETH_Eigen(int i)
     Eigen::MatrixXd thm = thermalmat_Eigen();
     Eigen::MatrixXd esm = eigenstatemat_Eigen(i);
     // Trace procedures: Should we trace over all spins except our state?
+    int size = n_all;
     while(j<(systemsize-1)) // Want to trace over all particles except one
     {
-        thm = trace_Eigen(thm);  // Should I declare it again, or just let it stand like this?
-        esm = trace_Eigen(esm);
+        thm = trace_Eigen(thm, size);  // Should I declare it again, or just let it stand like this?
+        esm = trace_Eigen(esm, size);
+        size >> 1;
         j++;
     }
     Eigen::MatrixXd diff_mat = thm - esm;
@@ -564,7 +596,14 @@ double Find_Quantities::ETH_Eigen_sector(int i)
     cout << "The thermal matrix is: " << endl;
     cout << thm << endl << endl;
 
-    thm = trace_Eigen_sector(thm);
+    int size = n_all;
+    while(j<(systemsize-1)) // Want to trace over all particles except one
+    {
+        thm = trace_Eigen(thm, size);  // Should I declare it again, or just let it stand like this?
+        size >> 1;
+        j++;
+    }
+
     esm = trace_Eigen_sector(esm);
 
     cout << "Reduced thermal matrix: " << endl;
@@ -582,10 +621,11 @@ double Find_Quantities::ETH_Eigen_maziero(int i)
     Eigen::MatrixXd thm = thermalmat_Eigen();
     Eigen::MatrixXd esm = eigenstatemat_Eigen(i);
     // Trace procedures: Should we trace over all spins except our state?
+    int size = n_all;
     while(j<(systemsize-1)) // Want to trace over all particles except one
     {
-        thm = trace_Eigen_maziero(thm);  // Should I declare it again, or just let it stand like this?
-        esm = trace_Eigen_maziero(esm);
+        thm = trace_Eigen_maziero(thm, size);  // Should I declare it again, or just let it stand like this?
+        esm = trace_Eigen_maziero(esm, size);  // What to do with esm?
         j++;
     }
     Eigen::MatrixXd diff_mat = thm - esm;
@@ -597,12 +637,12 @@ double Find_Quantities::ETH_Eigen_maziero(int i)
 
 //-------------------------------------------/USING EIGEN/------------------------------------------------//
 
-Eigen::MatrixXd Find_Quantities::trace_Eigen_maziero(Eigen::MatrixXd A)
+Eigen::MatrixXd Find_Quantities::trace_Eigen_maziero(Eigen::MatrixXd A, int size)
 {
     // Include an if-test
-    int traceN = N >> 1;                           // This works for the whole matrix only. Not quite sure what will happen for sectors.
-    Eigen::MatrixXd trace_matrix(traceN, traceN);  // Should I set all elements to zero?
-    int db = 2;                                    // Because we only trace over one particle. The Hilbert space is of dim 2 (spin up and down).
+    int traceN = n_all >> 1;                           // This works for the whole matrix only. Not quite sure what will happen for sectors.
+    Eigen::MatrixXd trace_matrix(traceN, traceN);      // Should I set all elements to zero?
+    int db = 2;                                        // Because we only trace over one particle. The Hilbert space is of dim 2 (spin up and down).
     for(int k=0; k<traceN; k++)
     {
         for(int l=0; l<traceN; l++)    trace_matrix(k,l) = 0.0;
@@ -624,41 +664,44 @@ Eigen::MatrixXd Find_Quantities::trace_Eigen_maziero(Eigen::MatrixXd A)
 }
 
 
-Eigen::MatrixXd Find_Quantities::trace_Eigen(Eigen::MatrixXd A)  // Should I just do armadillo instead?
+Eigen::MatrixXd Find_Quantities::trace_Eigen(Eigen::MatrixXd A, int size)  // Should I just do armadillo instead?
 {
     // Include an if-test
-    int n = N >> 1; // This works for the whole matrix only. Not quite sure what will happen for sectors.
+    int n = size >> 1; // This works for the whole matrix only. Not quite sure what will happen for sectors.
     Eigen::MatrixXd trace_matrix(n, n);  // Should I set all elements to zero?
     for(int i=0; i<n; i++)
     {
-        for(int j=0; j<n; j++)        trace_matrix(i,j) = A(2*i,2*j) + A(2*i+1,2*j+1);    // This should work, though, I haven't looked it up.
+        for(int j=0; j<n; j++)        trace_matrix(i,j) = A(2*i,2*j) + A(2*i+1,2*j+1);    // This should work, though I haven't looked it up.
     }
     return trace_matrix;
 }
 
 Eigen::MatrixXd Find_Quantities::trace_Eigen_sector(Eigen::MatrixXd A)
-{   // Verify somehow that this is correct.
+{
     Eigen::MatrixXd trace_matrix = initialize_matrix_Eigen(2);  // initialize_matrix_arma(int size)
-    int first_limit = floor(N/2);
+
+    int sztot_2 = 2*middlesector - systemsize;  // This is the total spin (in the z direction) divided by two.
+    int first_limit = factorial(systemsize-1)/(factorial((systemsize+sztot_2 )/2 -1)*factorial((systemsize- sztot_2)/2) );
+    //int first_limit = floor(N/2) + 1; // Just temporary, until I get the thing above fixed.
     for(int i=0; i<first_limit; i++)            trace_matrix(0,0) += A(i,i);
     for(int i=(first_limit+1); i<N; i++)        trace_matrix(1,1) += A(i,i);
     return trace_matrix;
 }
 
-
 Eigen::MatrixXd Find_Quantities::thermalmat_Eigen()
  {
      // Setting up the thermal matrix.
      calculateZ();
+     int n = system.no_of_states;
      double Zf = 1/Z;         // Since dividing is computationally expensive. But can we do something like A = A/Z ? seems a bit high-level.
      double eigmatik;
-     Eigen::MatrixXd A(N,N);  // Is this the correct notation?
-     for(int k=0; k<N; k++)
+     Eigen::MatrixXd A(n,n);  // Is this the correct notation?
+     for(int k=0; k<n; k++)
      {
-         for(int i=0; i<N; i++)
+         for(int i=0; i<n; i++)
          {
-             eigmatik = eigmat(i,k);  // 'Cause, getting the element each time is a bit tiring? Not important FLOPs, though...
-             for(int j=0; j<N; j++)    A(i,j) += Zf*exp(beta*(min_ev-eigvals(k)))*eigmatik*eigmat(j,k);   // Double check that this is correct. Think so since the eigenvectors in eigmat are stored as column vectors.
+             eigmatik = eigenvectors_all_Eigen(i,k);  // 'Cause, getting the element each time is a bit tiring? Not important FLOPs, though...
+             for(int j=0; j<n; j++)    A(i,j) += Zf*exp(beta*(min_ev-eigenvalues_all_Eigen(k)))*eigmatik*eigenvectors_all_Eigen(j,k);   // Double check that this is correct. Think so since the eigenvectors in eigmat are stored as column vectors.
          }
      }
      return A;
@@ -677,23 +720,23 @@ Eigen::MatrixXd Find_Quantities::eigenstatemat_Eigen(int i)
 
 //----------------------------------------/USING ARMADILLO/-----------------------------------------------//
 
-arma::mat Find_Quantities::trace_arma(arma::mat A)  // Should I just do armadillo instead?
+arma::mat Find_Quantities::trace_arma(arma::mat A, int size)  // Should I just do armadillo instead?
 {
     // Include an if-test
-    int n = N >> 1; // This works for the whole matrix only. Not quite sure what will happen for sectors.
+    int n = size >> 1; // This works for the whole matrix only. Not quite sure what will happen for sectors.
     arma::mat trace_matrix(n, n);  // Should I set all elements to zero?
     for(int i=0; i<n; i++)
     {
-        for(int j=0; j<n; j++)        trace_matrix(i,j) = A(2*i,2*j) + A(2*i+1,2*j+1);    // This should work, though, I haven't looked it up.
+        for(int j=0; j<n; j++)        trace_matrix(i,j) = A(2*i,2*j) + A(2*i+1,2*j+1);    // This should work, though I haven't looked it up.
     }
     return trace_matrix;
 }
 
 
-arma::mat Find_Quantities::trace_arma_maziero(arma::mat A)
+arma::mat Find_Quantities::trace_arma_maziero(arma::mat A, int size)
 {
     // Include an if-test
-    int traceN = N >> 1; // This works for the whole matrix only. Not quite sure what will happen for sectors.
+    int traceN = size >> 1; // This works for the whole matrix only. Not quite sure what will happen for sectors.
     int db = 2; // Tracing over one particle. The dimension of the Hilbert space is then 2 (spin up/spin down).
     arma::mat trace_matrix(traceN, traceN);
     int index1, index2;
@@ -722,10 +765,10 @@ arma::mat Find_Quantities::trace_arma_maziero(arma::mat A)
 }
 
 arma::mat Find_Quantities::trace_arma_sector(arma::mat A)
-{   // Verify somehow that this is correct.
+{
     arma::mat trace_matrix = initialize_matrix_arma(2);  // initialize_matrix_arma(int size)
 
-    int sztot_2 = 2*system.mysector - systemsize;  // This is the total spin (in the z direction) divided by two.
+    int sztot_2 = 2*middlesector - systemsize;  // This is the total spin (in the z direction) divided by two.
     int first_limit = factorial(systemsize-1)/(factorial((systemsize+sztot_2 )/2 -1)*factorial((systemsize- sztot_2)/2) );
     //int first_limit = floor(N/2) + 1; // Just temporary, until I get the thing above fixed.
     for(int i=0; i<first_limit; i++)            trace_matrix(0,0) += A(i,i);
@@ -737,20 +780,24 @@ arma::mat Find_Quantities::trace_arma_sector(arma::mat A)
 arma::mat Find_Quantities::thermalmat_arma()
 {
     // Setting up the thermal matrix.
-    calculateZ_arma();
-    double Zf = 1/Z;         // Since dividing is computationally expensive. But can we do something like A = A/Z ? seems a bit high-level.
+    calculateZ_arma();            // beta is now found
+    int n = system.no_of_states;  // Because capital N is already taken
+    double Zf = 1/Z;              // Since dividing is computationally expensive. But can we do something like A = A/Z ? seems a bit high-level.
     double eigmatki;
-    arma::mat A(N,N);  // Is this the correct notation?
-    for(int i=0; i<N; i++)
+    arma::mat A(n, n);            // Is this the correct notation?
+    A.fill(0.0);                  // This is hopefully more efficient than doing it with loops.
+    /*
+    for(int i=0; i<n; i++)
     {
-        for(int j=0; j<N; j++)    A(i,j) = 0.0;   // See if this helps
+        for(int j=0; j<n; j++)    A(i,j) = 0.0;   // See if this helps
     }
-    for(int k=0; k<N; k++)
+    */
+    for(int k=0; k<n; k++)
     {
-        for(int i=0; i<N; i++)
+        for(int i=0; i<n; i++)
         {
-            eigmatki = eigmat_a(i,k);  // 'Cause, getting the element each time is a bit tiring? Not important FLOPs, though...
-            for(int j=0; j<N; j++)    A(i,j) += Zf*exp(beta*(min_ev-eigvals_a(k)))*eigmatki*eigmat_a(j,k);   // Double check that this is correct. Think so since the eigenvectors in eigmat are stored as column vectors.
+            eigmatki = eigenvalues_all_arma(i,k);  // 'Cause, getting the element each time is a bit tiring? Not important FLOPs, though...
+            for(int j=0; j<n; j++)    A(i,j) += Zf*exp(beta*(min_ev-eigenvalues_all_arma(k)))*eigmatki*eigenvectors_all_arma(j,k);   // Double check that this is correct. Think so since the eigenvectors in eigmat are stored as column vectors.
         }
     }
     return A;
@@ -761,7 +808,7 @@ arma::mat Find_Quantities::eigenstatemat_arma(int i)
     arma::mat B(N,N);
     for(int j=0; j<N; j++)
     {
-        for(int k=0; k<N; k++)    B(k,j) = eigmat_a(k,i)*eigmat_a(j,i);
+        for(int k=0; k<N; k++)    B(k,j) = eigmat_a(k,i)*eigmat_a(j,i);  // This can be done a lot more compactly than the thermal matrix
     }
     return B;
 }

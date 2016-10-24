@@ -7,8 +7,9 @@
 using namespace std;
 
 void test_sectormatrix_diag(int systemsize, vector<double> hs, double J);
+void test_totalmatrix_diag(int systemsize, vector<double> hs, double J);
 
-void system_total_hom(int systemsize, int maxit, double tolerance, double h, double J, bool armabool);
+void system_total_hom(int systemsize, int maxit, double tolerance, double h, double J, bool armabool, bool inftempbool);
 void system_sector_hom(int systemsize, int maxit, double tolerance, double h, double J, bool armabool);
 void system_total_random(int systemsize, int maxit, double tolerance, double h, double J, bool armabool);
 void system_sector_random(int systemsize, int maxit, double tolerance, double h, double J, bool armabool);
@@ -30,9 +31,10 @@ int main()
     hs[1] = 0.7;
     hs[2] = 0.3;
 
-    test_sectormatrix_diag(systemsize, hs, J);
+    test_totalmatrix_diag(systemsize, hs, J);
     //system_total_hom(systemsize, maxit, tolerance, h, J, armabool);
 
+    /*
     cout << "Playing with factorials! " << endl;
     cout << "i = " << "; factorial(i) = " << endl;
     cout << 0 << "; "  << factorial(0) << endl;
@@ -47,6 +49,7 @@ int main()
     cout << 9 << "; "  << factorial(9) << endl;
     cout << 10 << "; " << factorial(10) << endl;
     cout << -1 << "; " << factorial(-1) << endl;
+    */
 
 
 
@@ -59,12 +62,13 @@ void test_sectormatrix_diag(int systemsize, vector<double> hs, double J)
     bool sectorbool = true;
     bool armabool = true;
 
+    for(int i=0; i<systemsize; i++)    cout << hs[i] << " " << endl;
     cout << "Solving using armadillo: " << endl;
     Set_Hamiltonian system(systemsize, J, hs, armabool, sectorbool);
 
     // Setting the sector
     if(systemsize%2==0)    sector = systemsize/2;
-    else                   sector = (systemsize-1)/2;  // Or possibly give the sector?
+    else                   sector = (systemsize+1)/2;  // Or possibly give the sector?
     system.set_mysector(sector);
     system.palhuse_interacting_sectorHamiltonian();
     system.palhuse_diagonal_sectorHamiltonian();
@@ -74,6 +78,7 @@ void test_sectormatrix_diag(int systemsize, vector<double> hs, double J)
     diagon.using_armadillo();
     diagon.print_using_armadillo();
 
+    for(int i=0; i<systemsize; i++)    cout << hs[i] << " " << endl;
     cout << "Solving using Eigen and LAPACK: " << endl;
     armabool = false;
     Set_Hamiltonian system2(systemsize, J, hs, armabool, sectorbool);
@@ -91,14 +96,49 @@ void test_sectormatrix_diag(int systemsize, vector<double> hs, double J)
 
 }
 
-void system_total_hom(int systemsize, int maxit, double tolerance, double h, double J, bool armabool)
+
+void test_totalmatrix_diag(int systemsize, vector<double> hs, double J)
+{
+    bool sectorbool = false;
+    bool armabool = true;
+
+    for(int i=0; i<systemsize; i++)    cout << hs[i] << " " << endl;
+    cout << "Solving using armadillo: " << endl;
+    Set_Hamiltonian system(systemsize, J, hs, armabool, sectorbool);
+
+    system.palhuse_interacting_totalHamiltonian();
+    system.palhuse_diagonal_totalHamiltonian();
+
+    Diagonalize diagon(system);
+
+    diagon.using_armadillo();
+    diagon.print_using_armadillo();
+
+    for(int i=0; i<systemsize; i++)    cout << hs[i] << " " << endl;
+    cout << "Solving using Eigen and LAPACK: " << endl;
+    armabool = false;
+    Set_Hamiltonian system2(systemsize, J, hs, armabool, sectorbool);
+
+    system2.palhuse_interacting_totalHamiltonian();
+    system2.palhuse_diagonal_totalHamiltonian();
+
+    Diagonalize diagon2(system2);
+
+    diagon2.lapack_directly();
+
+    cout << "One eigenvector: " << endl;
+    for(int i=0; i<diagon.N; i++)   cout << diagon.eigenvectors_armadillo(i,1) << " " << endl;
+
+}
+
+void system_total_hom(int systemsize, int maxit, double tolerance, double h, double J, bool armabool, bool inftempbool)
 {
     bool sectorbool = false;
 
     char field_type = 'H';
 
     Find_Quantities zyztehm(field_type, maxit, systemsize, tolerance, J, h, armabool, sectorbool, inftempbool);
-    for(int i=0; i<zyztehm.)
+    //for(int i=0; i<zyztehm; i++)
     zyztehm.ETH(1);
 
 }

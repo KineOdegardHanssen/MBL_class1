@@ -28,7 +28,9 @@ Set_Hamiltonian::Set_Hamiltonian(int systemsize, double J, vector<double> hs, bo
 
 void Set_Hamiltonian::create_armadillo_matrix()
 {   // Creates an empty matrix, ready to use, in those cases where it is not too big.
+    cout << "In create_armadillo_matrix" << endl;
     armaH = arma::mat(no_of_states, no_of_states);
+    cout << "Matrix initialized" << endl;
     for(int i=0; i<no_of_states; i++)
     {
         for(int j=0; j<no_of_states; j++)    armaH(i,j)= 0.0;
@@ -320,11 +322,11 @@ void Set_Hamiltonian::palhuse_diagonal_sectorHamiltonian()
     // Do something like index = no_of_states - i that works for this one.
     // For now, the matrix is upside down, but we have gotten a list of its entries: sectorlist.
     double element = 0;
-    double index;
+    //double index;
     for(int i=0; i<no_of_hits; i++)
     {
         element = 0;
-        index = no_of_hits-1-i;  // To order the matrix from highest to lowest number in the binary representation
+        //index = no_of_hits-1-i;  // To order the matrix from highest to lowest number in the binary representation
         int a = sectorlist[i];
         for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, a) + J*szip1szi(j,a);
         if(armadillobool == true)                            armaH(i,i) = element;
@@ -369,12 +371,13 @@ void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
 {
     int index = 0;
     double element = 0;
-    for(int i=0; i<no_of_states; i++)
+    for(int i=0; i<no_of_states; i++)   // Loop over every matrix element
     {
         element = 0;
         // The 2-particle case is special again...
-        for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + J*szip1szi(j,i);
-        index = no_of_states - (i+1);
+        for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + J*szip1szi(j,i);   // Loop over the contributions from each spin site.
+        //index = no_of_states - (i+1);
+        index = i;
         if(armadillobool==true)                            armaH(index,index) = element;
         else if(armadillobool==false)                      eigenH(index,index) = element;
     } // End for-loop over i

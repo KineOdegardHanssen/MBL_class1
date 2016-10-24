@@ -21,19 +21,29 @@ public:
     Diagonalize eig_all;
 
     char field_type;
-    int N, maxit, systemsize, li, lh;
+    int N, n_all, maxit, systemsize, middlesector, li, lh;
     double J, h, Z, beta, min_ev, tolerance; // Only change smallest_ev this for every new instance of quantities...
     bool armadillobool, sectorbool, inftempbool, field_type_fail;
 
     vector<double> hs;
 
+    // The eigenvalues and eigenvectors for the sector, or all of H if we choose not to work with sectors
     Eigen::VectorXd eigenvalues_all_Eigen;
+    Eigen::MatrixXd eigenvectors_all_Eigen;
+
+    // Every eigenvalue and eigenvector. For when we work with sectors.
     Eigen::VectorXd eigvals;
     Eigen::MatrixXd eigmat;
 
-    arma::vec eigenvalues_all_arma;  // 'Cause arma is cranky today...
-    arma::vec eigvals_a;  // This will probably be a problem...
-    arma::mat eigmat_a;   // Could rename it at each step. Troublesome...
+    // The eigenvalues and eigenvectors for the sector, or all of H if we choose not to work with sectors
+    arma::vec eigvals_a;
+    arma::mat eigmat_a;
+
+    // Every eigenvalue and eigenvector. For when we work with sectors.
+    arma::vec eigenvalues_all_arma;
+    arma::mat eigenvectors_all_arma;
+
+
 
 
     // Initializer
@@ -82,15 +92,15 @@ public:
     double ETH_Eigen_maziero(int i);
 
     // Eigen
-    Eigen::MatrixXd trace_Eigen(Eigen::MatrixXd A);
-    Eigen::MatrixXd trace_Eigen_maziero(Eigen::MatrixXd A);
+    Eigen::MatrixXd trace_Eigen(Eigen::MatrixXd A, int size);
+    Eigen::MatrixXd trace_Eigen_maziero(Eigen::MatrixXd A, int size);
     Eigen::MatrixXd trace_Eigen_sector(Eigen::MatrixXd A);
     Eigen::MatrixXd thermalmat_Eigen();             // See if I change this a bit.
     Eigen::MatrixXd eigenstatemat_Eigen(int i);
 
     // Armadillo
-    arma::mat trace_arma(arma::mat A);
-    arma::mat trace_arma_maziero(arma::mat A);
+    arma::mat trace_arma(arma::mat A, int size);
+    arma::mat trace_arma_maziero(arma::mat A, int size);
     arma::mat trace_arma_sector(arma::mat A);
     arma::mat thermalmat_arma();                    // See if I change this a bit.
     arma::mat eigenstatemat_arma(int i);
