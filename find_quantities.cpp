@@ -32,6 +32,44 @@ Find_Quantities::Find_Quantities(char field_type, int maxit, int systemsize, dou
     else                        initialize_all();
 }
 
+Find_Quantities::Find_Quantities(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool)
+{
+    this->field_type = field_type;
+    this->field_type_x = field_type_x;
+    this->maxit = maxit;
+    this->systemsize = systemsize;
+    this->tolerance = tolerance;
+    this->J = J;
+    this->h = h;
+    this->hx = hx;
+    this->armadillobool = armadillobool;           // Should I do something with this
+    this->inftempbool = inftempbool;
+
+    sectorbool = false;
+
+    field_type_fail = false;
+    if(field_type=='R')         make_hs_random();     //
+    else if(field_type=='H')    make_hs_homogenous();
+    else if(field_type=='A')    make_hs_alternating();
+    else
+    {
+        make_hs_homogenous();       // Change this to _random after the testing phase, because anything else would be a bummer.
+        field_type_fail = true;
+    }
+
+    field_type_fail_x = false;
+    if(field_type_x=='R')         make_hxs_random();     // Should probably have a function that takes in an empty array and returns a filled array.
+    else if(field_type_x=='H')    make_hxs_homogenous();
+    else if(field_type_x=='A')    make_hxs_alternating();
+    else
+    {
+        make_hxs_homogenous();       // Change this to _random after the testing phase, because anything else would be a bummer.
+        field_type_fail_x = true;
+    }
+    initialize_all_withsx();
+
+}
+
 
 void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool)
 {
@@ -67,6 +105,7 @@ void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int m
         make_hxs_homogenous();       // Change this to _random after the testing phase, because anything else would be a bummer.
         field_type_fail_x = true;
     }
+    initialize_all_withsx();
 
 }
 
@@ -231,8 +270,46 @@ void Find_Quantities::initialize_sector()
     sort_energies(); // What to do here...
 }
 
-// I need a way to choose eigenstates to look at. Store information in a vector or matrix of some sort?
 
+double Find_Quantities::testquantumside(int i)
+{
+    if(armadillobool)    testquantumside_arma(i);
+    else                 testquantumside_Eigen(i);
+}
+
+
+double Find_Quantities::testquantumside_arma(int i)
+{
+    arma::mat A = eigenstatemat_arma(i);
+    int j = 0;
+    int size = N; // The size of the matrix
+    while(j<(systemsize-1)) // Want to trace over all particles except one
+    {
+        A = trace_arma_maziero(A, size);  // Should I declare it again, or just let it stand like this?
+        size >> 1;
+        j++;
+    }
+    return A(0,0);
+}
+
+double Find_Quantities::testquantumside_Eigen(int i)
+{
+    Eigen::MatrixXd A = eigenstatemat_Eigen(i);
+    int j = 0;
+    int size = N;
+    while(j<(systemsize-1)) // Want to trace over all particles except one
+    {
+        A = trace_Eigen_maziero(A, size);  // Should I declare it again, or just let it stand like this?
+        size >> 1;
+        j++;
+    }
+    return A(0,0);
+}
+
+
+
+
+// I need a way to choose eigenstates to look at. Store information in a vector or matrix of some sort?
 
 //----------------------------------------BASIC FUNCTIONS-------------------------------------------------//
 
@@ -873,7 +950,7 @@ arma::mat Find_Quantities::trace_arma_maziero(arma::mat A, int size)
     return trace_matrix;
 }
 
-arma::mat Find_Quantities::trace_arma_sector(arma::mat A)
+arma::mat Find_Quantities::trace_arma_sector(arma::mat A) // Only if we consider spin sectors OR the quantum density operator when we have spin conservation
 {
     arma::mat trace_matrix = initialize_matrix_arma(2);  // initialize_matrix_arma(int size)
 
