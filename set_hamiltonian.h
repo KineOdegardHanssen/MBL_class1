@@ -17,7 +17,7 @@ public:
     bool armadillobool, sectorbool, sectorboolchanged, palhuse, testupip1downi, testdownip1upi;
 
     std::vector<int> sectorlist;
-    std::vector<double> hs;
+    std::vector<double> hs, hsx;
 
     Eigen::MatrixXd eigenH;
     arma::mat       armaH;
@@ -33,6 +33,8 @@ public:
     void sector0();            // Do I need these if I am going to call set_hamiltonian from find_quantities?
     void sector1_2();          // Odd name, perhaps...
 
+    void donotconservespin();
+
     void create_armadillo_matrix();
     void create_armadillo_matrix(int size);     // This is intended if we consider sectors
     void create_dense_Eigen_matrix();
@@ -46,6 +48,7 @@ public:
 
     // Spin operators
     double szi(int i, int a);
+    double sxi(int i, int a);
     double szip1szi(int i, int a);
     int upip1downi(int i, int a);  // A simpler version of spip1smi (if-test outside of function)
     int downip1upi(int i, int a);  // A simpler version of smip1spi (if-test outside of function)

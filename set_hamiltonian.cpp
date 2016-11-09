@@ -26,6 +26,11 @@ Set_Hamiltonian::Set_Hamiltonian(int systemsize, double J, vector<double> hs, bo
     // Should do things more automatically, probably... Or?
 }
 
+void Set_Hamiltonian::donotconservespin()         // I don't need this yet. It might be useful later
+{
+    palhuse = false;
+}
+
 void Set_Hamiltonian::create_armadillo_matrix()
 {   // Creates an empty matrix, ready to use, in those cases where it is not too big.
     cout << "In create_armadillo_matrix" << endl;
@@ -94,7 +99,7 @@ int Set_Hamiltonian::set_spin_down(int i, int a)
     return ~((~a)|(1<<i));
 }
 
-int Set_Hamiltonian::flip_spin(int i, int a)      // This is not in use
+int Set_Hamiltonian::flip_spin(int i, int a)      // Used only by sxi
 {
     return (a ^(1<<i));
 }
@@ -108,6 +113,13 @@ double Set_Hamiltonian::szi(int i, int a)
 {
     if(give_spin(i,a)==0)    return -0.5;
     else                     return 0.5;
+}
+
+double Set_Hamiltonian::sxi(int i, int a)
+{   // So the idea here is: S^x = 0.5*(S^+ + S^-). When acting on a state,
+    // one of these terms will flip the i'th spin, the other will return
+    //nothing. So this is the same as flipping the spin in the i-position
+    return 0.5*flip_spin(i,a);
 }
 
 double Set_Hamiltonian::szip1szi(int i, int a)
@@ -376,6 +388,24 @@ void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
         element = 0;
         // The 2-particle case is special again...
         for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + J*szip1szi(j,i);   // Loop over the contributions from each spin site.
+        //index = no_of_states - (i+1);
+        index = i;
+        if(armadillobool==true)                            armaH(index,index) = element;
+        else if(armadillobool==false)                      eigenH(index,index) = element;
+    } // End for-loop over i
+    if(armadillobool==false)                                                  eigenH.cast<double>(); // Is this really neccessary?
+} // End function palhuse_random_sectorHamiltonian_dense
+
+
+void Set_Hamiltonian::spinnotconserved_diagonal_totalHamiltonian()   // Would an if-test be more convenient? ... Save space, at least...
+{
+    int index = 0;
+    double element = 0;
+    for(int i=0; i<no_of_states; i++)   // Loop over every matrix element
+    {
+        element = 0;
+        // The 2-particle case is special again...
+        for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + hsx[j]*sxi(j,i) + J*szip1szi(j,i);   // Loop over the contributions from each spin site.
         //index = no_of_states - (i+1);
         index = i;
         if(armadillobool==true)                            armaH(index,index) = element;
