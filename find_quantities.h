@@ -20,12 +20,12 @@ public:
     Set_Hamiltonian system;            // Should I do something like this and nest them?  // Worry about this later
     Diagonalize eig_all;
 
-    char field_type;
+    char field_type, field_type_x;
     int N, n_all, maxit, systemsize, middlesector, li, lh;
-    double J, h, Z, beta, min_ev, tolerance; // Only change smallest_ev this for every new instance of quantities...
-    bool armadillobool, sectorbool, inftempbool, field_type_fail;
+    double J, h, hx, Z, beta, min_ev, tolerance; // Only change smallest_ev this for every new instance of quantities...
+    bool armadillobool, sectorbool, inftempbool, field_type_fail, field_type_fail_x;
 
-    vector<double> hs;
+    vector<double> hs, hxs;
 
     // The eigenvalues and eigenvectors for the sector, or all of H if we choose not to work with sectors
     Eigen::VectorXd eigenvalues_all_Eigen;
@@ -49,12 +49,19 @@ public:
     // Initializer
     Find_Quantities();
     Find_Quantities(char field_type, int maxit, int systemsize, double tolerance, double J, double h, bool armadillobool, bool sectorbool, bool inftempbool);
+    void spinnotconserved(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool);
     void initialize_sector(); // Are these two only needed for ETH? In that case, I guess they shouldn't be called from the constructor.
     void initialize_all();
+    void initialize_all_withsx();
     void make_hs_random();
     void make_hs_homogenous();
     void make_hs_alternating();
     void set_hs_manually(vector<double> hs_in);
+    void make_hxs_random();
+    void make_hxs_homogenous();
+    void make_hxs_alternating();
+    void make_hxs_linspace();
+    void set_hxs_manually(vector<double> hs_in);
 
 
     //Functions

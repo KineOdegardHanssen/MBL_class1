@@ -32,6 +32,44 @@ Find_Quantities::Find_Quantities(char field_type, int maxit, int systemsize, dou
     else                        initialize_all();
 }
 
+
+void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool)
+{
+    this->field_type = field_type;
+    this->field_type_x = field_type_x;
+    this->maxit = maxit;
+    this->systemsize = systemsize;
+    this->tolerance = tolerance;
+    this->J = J;
+    this->h = h;
+    this->hx = hx;
+    this->armadillobool = armadillobool;           // Should I do something with this
+    this->inftempbool = inftempbool;
+
+    sectorbool = false;
+
+    field_type_fail = false;
+    if(field_type=='R')         make_hs_random();     //
+    else if(field_type=='H')    make_hs_homogenous();
+    else if(field_type=='A')    make_hs_alternating();
+    else
+    {
+        make_hs_homogenous();       // Change this to _random after the testing phase, because anything else would be a bummer.
+        field_type_fail = true;
+    }
+
+    field_type_fail_x = false;
+    if(field_type_x=='R')         make_hxs_random();     // Should probably have a function that takes in an empty array and returns a filled array.
+    else if(field_type_x=='H')    make_hxs_homogenous();
+    else if(field_type_x=='A')    make_hxs_alternating();
+    else
+    {
+        make_hxs_homogenous();       // Change this to _random after the testing phase, because anything else would be a bummer.
+        field_type_fail_x = true;
+    }
+
+}
+
 void Find_Quantities::initialize_all()
 {
     system = Set_Hamiltonian(systemsize, J, hs, armadillobool, sectorbool);  // Do Set_Hamiltonian really need to take sectorbool in?
@@ -49,7 +87,7 @@ void Find_Quantities::initialize_all()
     n_all = N;
     if(armadillobool)   // So this is a bit complicated...
     {
-        diagon.using_armadillo();
+        eig_all.using_armadillo();
         eigvals_a = eig_all.eigenvalues_armadillo;              // Decide between an implementation of this
         eigmat_a = eig_all.eigenvectors_armadillo;
         eigenvalues_all_arma  = eig_all.eigenvalues_armadillo;  // Or this
@@ -63,7 +101,41 @@ void Find_Quantities::initialize_all()
     }
     else
     {
-        diagon.lapack_directly();
+        eig_all.lapack_directly();
+        eigvals = eig_all.eigenvalues_H;
+        eigmat  = eig_all.eigenmatrix_H;
+        eigenvalues_all_Eigen  = eig_all.eigenvalues_H;
+        eigenvectors_all_Eigen = eig_all.eigenmatrix_H;
+        min_ev = eigvals.minCoeff();
+    }
+    sort_energies();  // What about this when I have inftempbool?
+}
+
+void Find_Quantities::initialize_all_withsx()
+{
+    system = Set_Hamiltonian(systemsize, J, hs, armadillobool, sectorbool);  // Do Set_Hamiltonian really need to take sectorbool in?
+    system.palhuse_interacting_totalHamiltonian();
+    system.spinnotconserved_diagonal_totalHamiltonian();
+    eig_all = Diagonalize(system);
+    N = eig_all.N;
+    n_all = N;
+    if(armadillobool)   // So this is a bit complicated...
+    {
+        eig_all.using_armadillo();
+        eigvals_a = eig_all.eigenvalues_armadillo;              // Decide between an implementation of this
+        eigmat_a = eig_all.eigenvectors_armadillo;
+        eigenvalues_all_arma  = eig_all.eigenvalues_armadillo;  // Or this
+        eigenvectors_all_arma = eig_all.eigenvectors_armadillo; // Or both. Maybe both is wise.
+        min_ev = eigvals_a(0);            // The vector is sorted so that the first eigenvalue is the smallest. But the same goes for eigenvalues_H, I guess?
+        /*
+        cout << "Eigenvectors and eigenvalues in: " << endl;
+        cout << eigvals_a << endl;
+        cout << eigmat_a << endl;
+        */
+    }
+    else
+    {
+        eig_all.lapack_directly();
         eigvals = eig_all.eigenvalues_H;
         eigmat  = eig_all.eigenmatrix_H;
         eigenvalues_all_Eigen  = eig_all.eigenvalues_H;
@@ -269,6 +341,41 @@ void Find_Quantities::make_hs_alternating()
 void Find_Quantities::set_hs_manually(vector<double> hs_in)
 {   // This function may be useful for testing. NB: Must make sure len(hs_in) = system.no_of_states.
     for(unsigned int i=0; i<system.no_of_states; i++)        hs[i] = hs_in[i];
+}
+
+//-----------------------------------------------hx'S------------------------------------------------------//
+void Find_Quantities::make_hxs_random()
+{
+    /*
+    std::default_random_engine generator;        // I asked the internet, and it replied
+    std::uniform_real_distribution<double> distribution(-h,h);
+    for(int i=0; i<no_of_states; i++)
+    {
+        hs[i] = distribution(generator);   // This should do it
+    } // End for-loop
+    */
+}
+
+void Find_Quantities::make_hxs_homogenous()
+{
+    for(int i=0; i<system.no_of_states; i++)        hxs[i] = hx;
+}
+
+void Find_Quantities::make_hxs_alternating()
+{
+    for(int i=0; i<system.no_of_states; i++)        hxs[i] = hx*pow(-1,i);
+}
+
+void Find_Quantities::make_hxs_linspace()
+{
+    int nstates = pow(2,systemsize);
+    double step = hx/(nstates-1);
+    for(int i=0; i<nstates; i++)                    hxs[i] = i*step;
+}
+
+void Find_Quantities::set_hxs_manually(vector<double> hxs_in)
+{   // This function may be useful for testing. NB: Must make sure len(hs_in) = system.no_of_states.
+    for(unsigned int i=0; i<system.no_of_states; i++)        hxs[i] = hxs_in[i];
 }
 
 
@@ -509,6 +616,7 @@ double Find_Quantities::ETH_arma_sector(int i)
     cout << thm << endl << endl;
 
     int size = n_all;
+    int j = 0;
     // Trace procedures: Should we trace over all spins except our state?
     while(j<(systemsize-1)) // Want to trace over all particles except one
     {
@@ -597,6 +705,7 @@ double Find_Quantities::ETH_Eigen_sector(int i)
     cout << thm << endl << endl;
 
     int size = n_all;
+    int j = 0;
     while(j<(systemsize-1)) // Want to trace over all particles except one
     {
         thm = trace_Eigen(thm, size);  // Should I declare it again, or just let it stand like this?

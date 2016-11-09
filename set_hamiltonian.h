@@ -76,6 +76,7 @@ public:
     // Total Hamiltonian
     void palhuse_interacting_totalHamiltonian();
     void palhuse_diagonal_totalHamiltonian();
+    void spinnotconserved_diagonal_totalHamiltonian();
 
     void flip_diagonal_sectorHamiltonian();
 };
