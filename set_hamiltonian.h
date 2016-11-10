@@ -17,7 +17,7 @@ public:
     bool armadillobool, sectorbool, sectorboolchanged, palhuse, testupip1downi, testdownip1upi;
 
     std::vector<int> sectorlist;
-    std::vector<double> hs, hsx;
+    std::vector<double> hs, hxs;
 
     Eigen::MatrixXd eigenH;
     arma::mat       armaH;
@@ -33,7 +33,9 @@ public:
     void sector0();            // Do I need these if I am going to call set_hamiltonian from find_quantities?
     void sector1_2();          // Odd name, perhaps...
 
-    void donotconservespin();
+    // Input functions for looking at spin mixing
+    void donotconservespin();              // Don't think I need this
+    void give_hxs(vector<double> hxs_in);  // But I definitely need this
 
     void create_armadillo_matrix();
     void create_armadillo_matrix(int size);     // This is intended if we consider sectors
@@ -69,12 +71,15 @@ public:
     //Hamiltonians: Different kinds of systems
     void set_elements(int i, int b);           // unspecified.
     void palhuse_set_elements(int i, int b);
+    void set_element_spinnnotconserved(int i, int j);
+
     // Sector Hamiltonians
     void palhuse_interacting_sectorHamiltonian();
     void palhuse_diagonal_sectorHamiltonian();
 
     // Total Hamiltonian
     void palhuse_interacting_totalHamiltonian();
+    void palhuselike_spinnotconserved_interacting_totalHamiltonian();
     void palhuse_diagonal_totalHamiltonian();
     void spinnotconserved_diagonal_totalHamiltonian();
 

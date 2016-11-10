@@ -49,7 +49,7 @@ public:
     // Initializer
     Find_Quantities();
     Find_Quantities(char field_type, int maxit, int systemsize, double tolerance, double J, double h, bool armadillobool, bool sectorbool, bool inftempbool);
-    Find_Quantities::Find_Quantities(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool);
+    //Find_Quantities::Find_Quantities(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool);
     void spinnotconserved(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool);
     void initialize_sector(); // Are these two only needed for ETH? In that case, I guess they shouldn't be called from the constructor.
     void initialize_all();

@@ -37,13 +37,15 @@ int main()
     hs[2] = 0.3;
 
     vector<double> hxs = vector<double>(systemsize);
-    hs[0] = 0.3;
-    hs[1] = 0.1;
-    hs[2] = 0.9;
+    hxs[0] = 0.3;
+    hxs[1] = 0.1;
+    hxs[2] = 0.9;
 
     //test_totalmatrix_diag(systemsize, hs, J);
     //system_total_hom(systemsize, maxit, tolerance, h, J, armabool);
-    system_total_spinnotconserved_zhom_xalt(systemsize, maxit, tolerance, h, hx, J, armabool, inftempbool);
+    //test_totalmatrix_diag(systemsize, hs, J);
+    test_totalmatrix_spinnotconserved(systemsize, hs, hxs, J);
+    //system_total_spinnotconserved_zhom_xalt(systemsize, maxit, tolerance, h, hx, J, armabool, inftempbool);
 
     /*
     cout << "Playing with factorials! " << endl;
@@ -143,17 +145,19 @@ void test_totalmatrix_diag(int systemsize, vector<double> hs, double J)
 
 
 
-void test_totalmatrix_spinnotconserved(int systemsize, vector<double> hs, double J)
+void test_totalmatrix_spinnotconserved(int systemsize, vector<double> hs, vector<double> hxs, double J)
 {
+
     bool sectorbool = false;
     bool armabool = true;
 
     for(int i=0; i<systemsize; i++)    cout << hs[i] << " " << endl;
     cout << "Solving using armadillo: " << endl;
     Set_Hamiltonian system(systemsize, J, hs, armabool, sectorbool);
+    system.give_hxs(hxs);
 
-    system.palhuse_interacting_totalHamiltonian();
-    system.spinnotconserved_diagonal_totalHamiltonian();
+    system.palhuselike_spinnotconserved_interacting_totalHamiltonian();
+    system.palhuse_diagonal_totalHamiltonian();
 
     Diagonalize diagon(system);
 
@@ -210,6 +214,7 @@ void system_sector_random(int systemsize, int maxit, double tolerance, double h,
 
 void system_total_spinnotconserved_zhom_xalt(int systemsize, int maxit, double tolerance, double h, double hx, double J, bool armabool, bool inftempbool)
 {   // Should probably vary the systemsize here...
+    /*
     char field_type = 'H';
     char field_type_x = 'A';
 
@@ -219,6 +224,7 @@ void system_total_spinnotconserved_zhom_xalt(int systemsize, int maxit, double t
     {   // Should I print to file or something?
         cout << zyztehm.testquantumside(i) << endl;
     }
+    */
 }
 
 int factorial(int i)

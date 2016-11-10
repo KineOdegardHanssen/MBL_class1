@@ -32,6 +32,8 @@ Find_Quantities::Find_Quantities(char field_type, int maxit, int systemsize, dou
     else                        initialize_all();
 }
 
+// None of these will call: :(
+/*
 Find_Quantities::Find_Quantities(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool)
 {
     this->field_type = field_type;
@@ -108,6 +110,7 @@ void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int m
     initialize_all_withsx();
 
 }
+*/
 
 void Find_Quantities::initialize_all()
 {
@@ -150,6 +153,9 @@ void Find_Quantities::initialize_all()
     sort_energies();  // What about this when I have inftempbool?
 }
 
+
+// Maybe use this later, if everything is OK.
+/*
 void Find_Quantities::initialize_all_withsx()
 {
     system = Set_Hamiltonian(systemsize, J, hs, armadillobool, sectorbool);  // Do Set_Hamiltonian really need to take sectorbool in?
@@ -166,11 +172,11 @@ void Find_Quantities::initialize_all_withsx()
         eigenvalues_all_arma  = eig_all.eigenvalues_armadillo;  // Or this
         eigenvectors_all_arma = eig_all.eigenvectors_armadillo; // Or both. Maybe both is wise.
         min_ev = eigvals_a(0);            // The vector is sorted so that the first eigenvalue is the smallest. But the same goes for eigenvalues_H, I guess?
-        /*
-        cout << "Eigenvectors and eigenvalues in: " << endl;
-        cout << eigvals_a << endl;
-        cout << eigmat_a << endl;
-        */
+
+        //cout << "Eigenvectors and eigenvalues in: " << endl;
+        //cout << eigvals_a << endl;
+        //cout << eigmat_a << endl;
+
     }
     else
     {
@@ -183,7 +189,7 @@ void Find_Quantities::initialize_all_withsx()
     }
     sort_energies();  // What about this when I have inftempbool?
 }
-
+*/
 
 void Find_Quantities::initialize_sector()
 {   // Problem: The eigenvalues are now unsorted. --- But they are sorted in the sector we are considering

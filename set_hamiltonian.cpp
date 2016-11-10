@@ -31,6 +31,12 @@ void Set_Hamiltonian::donotconservespin()         // I don't need this yet. It m
     palhuse = false;
 }
 
+void Set_Hamiltonian::give_hxs(vector<double> hxs_in)  // For accessing the Set_Hamiltonian class directly (for testing and such)
+{
+    this->hxs = hxs_in;
+    cout << "hxs given" << endl;
+}
+
 void Set_Hamiltonian::create_armadillo_matrix()
 {   // Creates an empty matrix, ready to use, in those cases where it is not too big.
     cout << "In create_armadillo_matrix" << endl;
@@ -248,7 +254,7 @@ void Set_Hamiltonian::trim_sectorlist()
 
 //-------------------------------------------/HAMILTONIANS/--------------------------------------------//
 
-void Set_Hamiltonian::set_elements(int i, int b)
+void Set_Hamiltonian::set_elements(int i, int b)    // Do I really need this function?
 {
     if(palhuse==true)    palhuse_set_elements(i, b);
 }
@@ -287,6 +293,16 @@ void Set_Hamiltonian::palhuse_set_elements(int i, int b)
 
     }
 }
+
+void Set_Hamiltonian::set_element_spinnnotconserved(int i, int j)
+{
+    cout << "In set_element_spinnotconserved" << endl;
+    int b = flip_spin(j,i);
+    if(armadillobool)        armaH(b,i) = 0.25*hxs[j];
+    else                     eigenH(b,i) = 0.25*hxs[j];
+}
+
+
 //----------------------------------------SECTOR HAMILTONIANS---------------------------------------------//
 
 void Set_Hamiltonian::palhuse_interacting_sectorHamiltonian()
@@ -378,6 +394,38 @@ void Set_Hamiltonian::palhuse_interacting_totalHamiltonian()
 } // End function
 
 
+void Set_Hamiltonian::palhuselike_spinnotconserved_interacting_totalHamiltonian()
+{
+    cout << "In palhuselike_spinnotconserved_interactiong_totalHamiltonian" << endl;
+    if(armadillobool)                                               create_armadillo_matrix();
+    else                                                            create_dense_Eigen_matrix();
+    sectorbool=false; // Is this neccessary?
+
+    matrixsize = no_of_states;
+
+    int b = 0;
+    for(int i=0; i<no_of_states; i++)
+    {   // i is our state
+        for(int j=0; j<systemsize; j++)
+        {
+            // Setting the elements that we did in Pal & Huse
+            checktestupdown(j,i);
+            if(testupip1downi==true)
+            {
+                b = upip1downi(j, i);
+                set_elements(i,b);
+            }
+            if(testdownip1upi==true) // else if here would maybe save some time (not much, though)
+            {
+                b = downip1upi(j, i);
+                set_elements(i,b);
+            }
+            set_element_spinnnotconserved(i,j);
+        } // End for j
+    } // End for i
+}
+
+
 
 void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
 {
@@ -388,8 +436,8 @@ void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
         element = 0;
         // The 2-particle case is special again...
         for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + J*szip1szi(j,i);   // Loop over the contributions from each spin site.
-        //index = no_of_states - (i+1);
-        index = i;
+        index = no_of_states - (i+1);
+        //index = i;
         if(armadillobool==true)                            armaH(index,index) = element;
         else if(armadillobool==false)                      eigenH(index,index) = element;
     } // End for-loop over i
@@ -397,6 +445,9 @@ void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
 } // End function palhuse_random_sectorHamiltonian_dense
 
 
+
+// This is trash, basically
+/*
 void Set_Hamiltonian::spinnotconserved_diagonal_totalHamiltonian()   // Would an if-test be more convenient? ... Save space, at least...
 {
     int index = 0;
@@ -405,7 +456,7 @@ void Set_Hamiltonian::spinnotconserved_diagonal_totalHamiltonian()   // Would an
     {
         element = 0;
         // The 2-particle case is special again...
-        for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + hsx[j]*sxi(j,i) + J*szip1szi(j,i);   // Loop over the contributions from each spin site.
+        for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + hxs[j]*sxi(j,i) + J*szip1szi(j,i);   // Loop over the contributions from each spin site.
         //index = no_of_states - (i+1);
         index = i;
         if(armadillobool==true)                            armaH(index,index) = element;
@@ -420,3 +471,5 @@ void Set_Hamiltonian::flip_diagonal_sectorHamiltonian()
     // See if I have to do something to flip the Hamiltonian. Could probably do this without calling its own function.
 
 }
+
+*/
