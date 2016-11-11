@@ -23,6 +23,7 @@ Set_Hamiltonian::Set_Hamiltonian(int systemsize, double J, vector<double> hs, bo
     this->armadillobool = armadillobool;
     this->sectorbool = sectorbool;
     palhuse = true;                               // Default setting
+    cout << "In constructor. armadillobool: " << armadillobool << endl;
     // Should do things more automatically, probably... Or?
 }
 
@@ -34,7 +35,8 @@ void Set_Hamiltonian::donotconservespin()         // I don't need this yet. It m
 void Set_Hamiltonian::give_hxs(vector<double> hxs_in)  // For accessing the Set_Hamiltonian class directly (for testing and such)
 {
     this->hxs = hxs_in;
-    cout << "hxs given" << endl;
+    cout << "hxs given. armadillobool = " << armadillobool << endl;
+
 }
 
 void Set_Hamiltonian::create_armadillo_matrix()
@@ -296,10 +298,15 @@ void Set_Hamiltonian::palhuse_set_elements(int i, int b)
 
 void Set_Hamiltonian::set_element_spinnnotconserved(int i, int j)
 {
-    cout << "In set_element_spinnotconserved" << endl;
+    cout << "In set_element_spinnotconserved. armadillobool: " << armadillobool << endl;
     int b = flip_spin(j,i);
     if(armadillobool)        armaH(b,i) = 0.25*hxs[j];
-    else                     eigenH(b,i) = 0.25*hxs[j];
+    else{
+        cout << "In if(!armadillobool) :) " << endl;
+        eigenH(b,i) = 0.25*hxs[j];
+        cout << "i = " << i << "; j = " << j << ";     element of eigenH should be set as: " <<  0.25*hxs[j] << "; But it is actually: " << eigenH(b,i) << endl;
+    }
+
 }
 
 
@@ -396,12 +403,14 @@ void Set_Hamiltonian::palhuse_interacting_totalHamiltonian()
 
 void Set_Hamiltonian::palhuselike_spinnotconserved_interacting_totalHamiltonian()
 {
-    cout << "In palhuselike_spinnotconserved_interactiong_totalHamiltonian" << endl;
+    cout << "In palhuselike_spinnotconserved_interactiong_totalHamiltonian. armadillobool = " << armadillobool << endl;
     if(armadillobool)                                               create_armadillo_matrix();
     else                                                            create_dense_Eigen_matrix();
     sectorbool=false; // Is this neccessary?
 
     matrixsize = no_of_states;
+
+    cout << "before the loop, armadillobool is: " << armadillobool << endl;
 
     int b = 0;
     for(int i=0; i<no_of_states; i++)

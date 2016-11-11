@@ -15,7 +15,7 @@ Diagonalize::Diagonalize(Set_Hamiltonian given)
 
 void Diagonalize::lapack_directly()
 {
-    const bool TRACE = true;
+    const bool TRACE = false;
 
     //Tests if I want to use them
     //cout << "compute the LU factorization..." << endl << endl;
@@ -66,11 +66,9 @@ void Diagonalize::lapack_directly()
     double *A = given.eigenH.data(); // Must I rewrite this?
     //if(TRACE)    cout << "After declaration double *A1" << endl;
 
-    if(TRACE)
-    {
-        cout << "Our sector Hamiltonian:" << endl;
-        cout << given.eigenH << endl;
-    }
+
+    cout << "Our sector Hamiltonian:" << endl;
+    cout << given.eigenH << endl;
 
     // end of declarations
 
@@ -124,10 +122,12 @@ void Diagonalize::lapack_directly()
             }
             cout << endl;
             */
-
-            cout << "Corresponding eigenvalues: " << endl;
-            for(int k=0; k<N; k++)    cout << W[k] << ", ";
-            cout << endl;
+            if(TRACE)
+            {
+                cout << "Corresponding eigenvalues: " << endl;
+                for(int k=0; k<N; k++)    cout << W[k] << ", ";
+                cout << endl;
+            }
         }
     }
 
@@ -192,7 +192,7 @@ void Diagonalize::lapack_directly()
     //eigenmatrix_H(A, N, N);
 
     //cout << "After using the Map function in Eigen: " << endl;
-    cout << B << endl;
+    //cout << B << endl;
 
     if(TRACE)    cout << "Everything should be running just fine" << endl;
 
@@ -247,7 +247,7 @@ void Diagonalize::using_dense_eigen()
 
 void Diagonalize::print_dense_using_eigen()
 {
-    cout << "In print_dense_using_eigen" << endl;
+    //cout << "In print_dense_using_eigen" << endl;
     N = given.matrixsize;
 
     //cout << "The matrix is: " << endl;
@@ -259,10 +259,10 @@ void Diagonalize::print_dense_using_eigen()
 
     eigen_time = (eigen_time_end - eigen_time_start)/CLOCKS_PER_SEC;
 
-    cout << "The eigenvalues of H are:" << endl << es.eigenvalues() << endl;
+    //cout << "The eigenvalues of H are:" << endl << es.eigenvalues() << endl;
     //cout << "The matrix of eigenvectors, V, is:" << endl << es.eigenvectors() << endl << endl;
 
-    cout << "Exiting print_dense_using_eigen" << endl;
+    //cout << "Exiting print_dense_using_eigen" << endl;
 }
 
 

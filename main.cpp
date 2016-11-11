@@ -156,6 +156,9 @@ void test_totalmatrix_spinnotconserved(int systemsize, vector<double> hs, vector
     Set_Hamiltonian system(systemsize, J, hs, armabool, sectorbool);
     system.give_hxs(hxs);
 
+    cout << "This is what armabool is, according to system: " << system.armadillobool << endl;
+    cout << "False is: " << false << endl;
+
     system.palhuselike_spinnotconserved_interacting_totalHamiltonian();
     system.palhuse_diagonal_totalHamiltonian();
 
@@ -166,10 +169,15 @@ void test_totalmatrix_spinnotconserved(int systemsize, vector<double> hs, vector
 
     for(int i=0; i<systemsize; i++)    cout << hs[i] << " " << endl;
     cout << "Solving using Eigen and LAPACK: " << endl;
+
     armabool = false;
     Set_Hamiltonian system2(systemsize, J, hs, armabool, sectorbool);
+    system2.give_hxs(hxs);
 
-    system2.palhuse_interacting_totalHamiltonian();
+    cout << "This is what armabool is, according to system2: " << system2.armadillobool << endl;
+    cout << "False is: " << false << endl;
+
+    system2.palhuselike_spinnotconserved_interacting_totalHamiltonian();
     system2.palhuse_diagonal_totalHamiltonian();
 
     Diagonalize diagon2(system2);
@@ -192,6 +200,7 @@ void system_total_hom(int systemsize, int maxit, double tolerance, double h, dou
     zyztehm.ETH(1);
 
 }
+
 
 void system_total_random(int systemsize, int maxit, double tolerance, double h, double J, bool armabool)
 {
