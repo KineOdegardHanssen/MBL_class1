@@ -6,6 +6,7 @@
 #include <Eigen/Dense>
 #include <Eigen/QR>
 #include <Eigen/Eigenvalues>
+#include <typeinfo>
 
 using namespace std;
 
@@ -23,7 +24,7 @@ Set_Hamiltonian::Set_Hamiltonian(int systemsize, double J, vector<double> hs, bo
     this->armadillobool = armadillobool;
     this->sectorbool = sectorbool;
     palhuse = true;                               // Default setting
-    cout << "In constructor. armadillobool: " << armadillobool << endl;
+    //cout << "In constructor" << endl;
     // Should do things more automatically, probably... Or?
 }
 
@@ -35,7 +36,15 @@ void Set_Hamiltonian::donotconservespin()         // I don't need this yet. It m
 void Set_Hamiltonian::give_hxs(vector<double> hxs_in)  // For accessing the Set_Hamiltonian class directly (for testing and such)
 {
     this->hxs = hxs_in;
-    cout << "hxs given. armadillobool = " << armadillobool << endl;
+    cout << "hxs given" << endl;
+    /*
+    cout << "Printing hxs: " << endl;
+    for(int i=0; i<systemsize; i++)
+    {
+        cout << "hxs_in[" << i << "] = " << hxs_in[i] << endl;
+        cout << "hxs[" << i << "] = " << hxs[i] << endl;
+    }
+    */
 
 }
 
@@ -256,13 +265,14 @@ void Set_Hamiltonian::trim_sectorlist()
 
 //-------------------------------------------/HAMILTONIANS/--------------------------------------------//
 
-void Set_Hamiltonian::set_elements(int i, int b)    // Do I really need this function?
+void Set_Hamiltonian::set_elements(int i, int b)    // Do I really need this function? --- Only if I am going to have some non-PalHuse Hamiltonian with spin conservation.
 {
     if(palhuse==true)    palhuse_set_elements(i, b);
 }
 
 void Set_Hamiltonian::palhuse_set_elements(int i, int b)
 {
+    cout << "In palhuse_set_elements" << endl;
     int index1 = 0;
     int index2 = 0;
     if(sectorbool==false)
@@ -298,14 +308,10 @@ void Set_Hamiltonian::palhuse_set_elements(int i, int b)
 
 void Set_Hamiltonian::set_element_spinnnotconserved(int i, int j)
 {
-    cout << "In set_element_spinnotconserved. armadillobool: " << armadillobool << endl;
+    cout << "In set_element_spinnotconserved" << endl;
     int b = flip_spin(j,i);
     if(armadillobool)        armaH(b,i) = 0.25*hxs[j];
-    else{
-        cout << "In if(!armadillobool) :) " << endl;
-        eigenH(b,i) = 0.25*hxs[j];
-        cout << "i = " << i << "; j = " << j << ";     element of eigenH should be set as: " <<  0.25*hxs[j] << "; But it is actually: " << eigenH(b,i) << endl;
-    }
+    else                     eigenH(b,i) = 0.25*hxs[j];
 
 }
 
@@ -403,33 +409,51 @@ void Set_Hamiltonian::palhuse_interacting_totalHamiltonian()
 
 void Set_Hamiltonian::palhuselike_spinnotconserved_interacting_totalHamiltonian()
 {
-    cout << "In palhuselike_spinnotconserved_interactiong_totalHamiltonian. armadillobool = " << armadillobool << endl;
+    //cout << "In palhuselike_spinnotconserved_interactiong_totalHamiltonian" << endl;
     if(armadillobool)                                               create_armadillo_matrix();
     else                                                            create_dense_Eigen_matrix();
     sectorbool=false; // Is this neccessary?
 
     matrixsize = no_of_states;
 
-    cout << "before the loop, armadillobool is: " << armadillobool << endl;
-
     int b = 0;
     for(int i=0; i<no_of_states; i++)
     {   // i is our state
         for(int j=0; j<systemsize; j++)
         {
+            cout << "in loop" << endl;
             // Setting the elements that we did in Pal & Huse
             checktestupdown(j,i);
             if(testupip1downi==true)
             {
+                cout << "S+S-" << endl;
                 b = upip1downi(j, i);
                 set_elements(i,b);
             }
             if(testdownip1upi==true) // else if here would maybe save some time (not much, though)
             {
+                cout << "S-S+" << endl;
                 b = downip1upi(j, i);
                 set_elements(i,b);
             }
-            set_element_spinnnotconserved(i,j);
+            if(armadillobool)
+            {
+                for(int i=0; i<no_of_states; i++)        // This does not seem to be neccessary all the time, but it is safer.
+                {
+                    for(int j=0; j<no_of_states; j++)    cout << armaH(i,j) << " ";
+                    cout << endl;
+                }
+            }
+            else
+            {
+                for(int i=0; i<no_of_states; i++)        // This does not seem to be neccessary all the time, but it is safer.
+                {
+                    for(int j=0; j<no_of_states; j++)    cout << eigenH(i,j) << " ";
+                    cout << endl;
+                }
+            }
+            //cout << "If-tests ended for now. Setting the sxi-generated elements: " << endl;
+            //set_element_spinnnotconserved(i,j);
         } // End for j
     } // End for i
 }
@@ -438,8 +462,14 @@ void Set_Hamiltonian::palhuselike_spinnotconserved_interacting_totalHamiltonian(
 
 void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
 {
+    cout << "In palhuse_diagonal_totalHamiltonian()" << endl;
     int index = 0;
     double element = 0;
+    cout << "Just testing to see if, for some stupid reason, I can't access the elements of a vector:" << endl;
+    cout << "Here goes nothing: hs[0] = " << hs[0] << endl;
+    cout << "You're here, so the fault must be somewhere else" << endl;
+
+    cout << "Before setting the diagonal elements" << endl;
     for(int i=0; i<no_of_states; i++)   // Loop over every matrix element
     {
         element = 0;
@@ -450,30 +480,14 @@ void Set_Hamiltonian::palhuse_diagonal_totalHamiltonian()
         if(armadillobool==true)                            armaH(index,index) = element;
         else if(armadillobool==false)                      eigenH(index,index) = element;
     } // End for-loop over i
+    cout << "After setting the diagonal elements" << endl;
     if(armadillobool==false)                                                  eigenH.cast<double>(); // Is this really neccessary?
 } // End function palhuse_random_sectorHamiltonian_dense
 
 
 
-// This is trash, basically
+// Do I need something like this for sectors, maybe?
 /*
-void Set_Hamiltonian::spinnotconserved_diagonal_totalHamiltonian()   // Would an if-test be more convenient? ... Save space, at least...
-{
-    int index = 0;
-    double element = 0;
-    for(int i=0; i<no_of_states; i++)   // Loop over every matrix element
-    {
-        element = 0;
-        // The 2-particle case is special again...
-        for(int j=0; j<systemsize; j++)  element += hs[j]*szi(j, i) + hxs[j]*sxi(j,i) + J*szip1szi(j,i);   // Loop over the contributions from each spin site.
-        //index = no_of_states - (i+1);
-        index = i;
-        if(armadillobool==true)                            armaH(index,index) = element;
-        else if(armadillobool==false)                      eigenH(index,index) = element;
-    } // End for-loop over i
-    if(armadillobool==false)                                                  eigenH.cast<double>(); // Is this really neccessary?
-} // End function palhuse_random_sectorHamiltonian_dense
-
 
 void Set_Hamiltonian::flip_diagonal_sectorHamiltonian()
 {

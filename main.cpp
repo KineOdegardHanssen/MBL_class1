@@ -41,11 +41,12 @@ int main()
     hxs[1] = 0.1;
     hxs[2] = 0.9;
 
+
     //test_totalmatrix_diag(systemsize, hs, J);
     //system_total_hom(systemsize, maxit, tolerance, h, J, armabool);
     //test_totalmatrix_diag(systemsize, hs, J);
-    test_totalmatrix_spinnotconserved(systemsize, hs, hxs, J);
-    //system_total_spinnotconserved_zhom_xalt(systemsize, maxit, tolerance, h, hx, J, armabool, inftempbool);
+    //test_totalmatrix_spinnotconserved(systemsize, hs, hxs, J);
+    system_total_spinnotconserved_zhom_xalt(systemsize, maxit, tolerance, h, hx, J, armabool, inftempbool);
 
     /*
     cout << "Playing with factorials! " << endl;
@@ -223,17 +224,19 @@ void system_sector_random(int systemsize, int maxit, double tolerance, double h,
 
 void system_total_spinnotconserved_zhom_xalt(int systemsize, int maxit, double tolerance, double h, double hx, double J, bool armabool, bool inftempbool)
 {   // Should probably vary the systemsize here...
-    /*
+    /* */
     char field_type = 'H';
     char field_type_x = 'A';
 
-    Find_Quantities zyztehm(field_type, field_type_x, maxit, systemsize, tolerance, J, h, hx, armabool, inftempbool);
-    //zyztehm.spinnotconserved(field_type, field_type_x, maxit, systemsize, tolerance, J, h, hx, armabool, inftempbool);
+    Find_Quantities zyztehm = Find_Quantities();//(field_type, field_type_x, maxit, systemsize, tolerance, J, h, hx, armabool, inftempbool);
+    cout << "Find_Quantities initialized" << endl;
+    zyztehm.spinnotconserved(field_type, field_type_x, maxit, systemsize, tolerance, J, h, hx, armabool, inftempbool);
+    cout << "Successfully ran Find_Quantities::spinnotconserved" << endl;
     for(int i=0; i<zyztehm.N; i++)
     {   // Should I print to file or something?
         cout << zyztehm.testquantumside(i) << endl;
     }
-    */
+
 }
 
 int factorial(int i)

@@ -25,7 +25,7 @@ public:
     double J, h, hx, Z, beta, min_ev, tolerance; // Only change smallest_ev this for every new instance of quantities...
     bool armadillobool, sectorbool, inftempbool, field_type_fail, field_type_fail_x;
 
-    vector<double> hs, hxs;
+    std::vector<double> hs, hxs;
 
     // The eigenvalues and eigenvectors for the sector, or all of H if we choose not to work with sectors
     Eigen::VectorXd eigenvalues_all_Eigen;

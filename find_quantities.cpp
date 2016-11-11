@@ -72,9 +72,10 @@ Find_Quantities::Find_Quantities(char field_type, char field_type_x, int maxit, 
 
 }
 
-
+*/
 void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int maxit, int systemsize, double tolerance, double J, double h, double hx, bool armadillobool, bool inftempbool)
 {
+    cout << "In Find_Quantities::spinnotconserved" << endl;
     this->field_type = field_type;
     this->field_type_x = field_type_x;
     this->maxit = maxit;
@@ -86,7 +87,11 @@ void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int m
     this->armadillobool = armadillobool;           // Should I do something with this
     this->inftempbool = inftempbool;
 
+    cout << "Every input parameter is set." << endl;
+
     sectorbool = false;
+
+    cout << "sectorbool = false set." << endl;
 
     field_type_fail = false;
     if(field_type=='R')         make_hs_random();     //
@@ -98,6 +103,8 @@ void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int m
         field_type_fail = true;
     }
 
+    cout << "hs set." << endl;
+
     field_type_fail_x = false;
     if(field_type_x=='R')         make_hxs_random();     // Should probably have a function that takes in an empty array and returns a filled array.
     else if(field_type_x=='H')    make_hxs_homogenous();
@@ -107,10 +114,13 @@ void Find_Quantities::spinnotconserved(char field_type, char field_type_x, int m
         make_hxs_homogenous();       // Change this to _random after the testing phase, because anything else would be a bummer.
         field_type_fail_x = true;
     }
+
+    cout << "hxs set." << endl;
+
     initialize_all_withsx();
 
 }
-*/
+
 
 void Find_Quantities::initialize_all()
 {
@@ -155,23 +165,42 @@ void Find_Quantities::initialize_all()
 
 
 // Maybe use this later, if everything is OK.
-/*
+/* */
 void Find_Quantities::initialize_all_withsx()
 {
+    cout << "In initialize_all_withsx" << endl;
     system = Set_Hamiltonian(systemsize, J, hs, armadillobool, sectorbool);  // Do Set_Hamiltonian really need to take sectorbool in?
-    system.palhuse_interacting_totalHamiltonian();
-    system.spinnotconserved_diagonal_totalHamiltonian();
+    cout << "Set_Hamiltonian initialized." << endl;
+    system.give_hxs(hxs);
+    cout << "Set_Hamiltonian::give_hxs run. Printing the vector:" << endl;
+
+    /*
+    for(int i=0; i<systemsize; i++)
+    {
+        cout << system.hxs[i] << endl;
+    }
+    */
+
+
+    system.palhuselike_spinnotconserved_interacting_totalHamiltonian();
+    cout << "Set_Hamiltonian::palhuselike__spinnotconserved_interacting_totalHamiltonian run." << endl;
+    system.palhuse_diagonal_totalHamiltonian();
+    cout << "Set_Hamiltonian::palhuse_diagonal_totalHamiltonian run." << endl;
+
     eig_all = Diagonalize(system);
+    cout << "Diagonalize initialized." << endl;
     N = eig_all.N;
     n_all = N;
     if(armadillobool)   // So this is a bit complicated...
     {
         eig_all.using_armadillo();
+        cout << "Diagonalize::using_armadillo() run." << endl;
         eigvals_a = eig_all.eigenvalues_armadillo;              // Decide between an implementation of this
         eigmat_a = eig_all.eigenvectors_armadillo;
         eigenvalues_all_arma  = eig_all.eigenvalues_armadillo;  // Or this
         eigenvectors_all_arma = eig_all.eigenvectors_armadillo; // Or both. Maybe both is wise.
         min_ev = eigvals_a(0);            // The vector is sorted so that the first eigenvalue is the smallest. But the same goes for eigenvalues_H, I guess?
+        cout << "Everything is set." << endl;
 
         //cout << "Eigenvectors and eigenvalues in: " << endl;
         //cout << eigvals_a << endl;
@@ -181,15 +210,18 @@ void Find_Quantities::initialize_all_withsx()
     else
     {
         eig_all.lapack_directly();
+        cout << "Diagonalize::lapack_directly() run." << endl;
         eigvals = eig_all.eigenvalues_H;
         eigmat  = eig_all.eigenmatrix_H;
         eigenvalues_all_Eigen  = eig_all.eigenvalues_H;
         eigenvectors_all_Eigen = eig_all.eigenmatrix_H;
         min_ev = eigvals.minCoeff();
+        cout << "Everything is set." << endl;
     }
     sort_energies();  // What about this when I have inftempbool?
+    cout << "Done with Find_Quantities::initialize_all_withsx()." << endl;
 }
-*/
+
 
 void Find_Quantities::initialize_sector()
 {   // Problem: The eigenvalues are now unsorted. --- But they are sorted in the sector we are considering
